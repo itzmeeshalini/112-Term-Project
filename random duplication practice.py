@@ -11,7 +11,7 @@ def appStarted(app):
 
     app.cells = [[app.width, 100, 0]]
     
-    url = 'https://www.pngall.com/wp-content/uploads/10/Body-Cell-Vector-PNG-File.png'
+    url = 'https://i.kisscc0.com/20180705/xlw/kisscc0-mast-cell-blood-cell-human-body-computer-icons-mast-cell-5b3e5e648f1c85.1849354215308140525862.png'
     app.image1 = app.loadImage(url)
     app.image1 = app.scaleImage(app.image1, 1/7)
     app.timerDelay = 100
@@ -22,14 +22,17 @@ def keyPressed(app, event):
 
 def timerFired(app):
     app.currentTime += app.timerDelay
-    for i in range(len(app.cells)):
+    i = 0
+    while i < len(app.cells):
         cell = app.cells[i]
         cellBirthTime = cell[2]
         cellBirthTime += app.timerDelay
         if (app.currentTime - cellBirthTime) % 500 >= 400:
             duplication(app, cell)
-        if (app.currentTime - cellBirthTime) >= 10000:
+            i += 1
+        if (app.currentTime - cellBirthTime) >= 5000:
             death(app, i)
+
     #print(app.cells)
 
 def mousePressed(app, event):

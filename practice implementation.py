@@ -1,5 +1,5 @@
 from cmu_112_graphics import *
-
+import random
 
 def appStarted(app):
     app.rows = 15
@@ -9,12 +9,28 @@ def appStarted(app):
     app.tileHeight = app.height//app.cols
 
     app.colors = [([0] * app.cols) for row in range(app.rows)]
-    app.currentGreenX = 0
+    app.currentGreenX = random.randint(0, app.cols)
     app.currentGreenY = 0
-    app.colors[0][0] = 1
+    app.colors[app.currentGreenX][app.currentGreenY] = 1
     url = 'https://www.freepnglogos.com/uploads/dna-png/dna-profiling-esr-12.png'
     app.image1 = app.loadImage(url)
     app.image1 = app.scaleImage(app.image1, 1/8)
+    
+    url = 'http://www.cs.cmu.edu/~112/notes/sample-spritestrip.png'
+    app.spritestrip = app.loadImage(url)
+    app.spritestrip = app.scaleImage(app.spritestrip, 1/4)
+    app.spritestrip = app.spritestrip.transpose(Image.FLIP_LEFT_RIGHT)
+
+    app.sprites = getSprites(app, app.spritestrip)    
+    app.spriteCounter = 0
+    app.currentTime = 0
+
+def getSprites(app, strip):
+    sprites = [ ]
+    for i in range(6):
+        sprite = strip.crop((7.5+65*i, 7.5, 57.5+65*i, 62.5))
+        sprites.append(sprite)
+    return sprites
 
 def keyPressed(app, event):
     if event.key == 'Down':
@@ -35,12 +51,24 @@ def keyPressed(app, event):
     elif event.key == 'Left':
         if app.currentGreenX > 0:
             app.currentGreenX -= 1
-            changeColor(app, app.currentGreenX, app.currentGreenY) 
+            changeColor(app, app.currentGreenX, app.currentGreenY)
+    
+    elif event.key == 'r':
+        app.colors = [([0] * app.cols) for row in range(app.rows)]
+        app.currentGreenX = random.randint(0, app.cols)
+        app.currentGreenY = 0
+        app.colors[app.currentGreenX][app.currentGreenY] = 1
 
 
 def timerFired(app):
-    pass
-
+    app.currentTime += app.timerDelay
+    app.spriteCounter = (1 + app.spriteCounter) % len(app.sprites)
+    if app.currentTime % 1000 == 0:
+        if app.currentGreenY < app.cols - 1:
+            app.currentGreenY += 1  
+            changeColor(app, app.currentGreenX, app.currentGreenY)
+    
+    
 def mousePressed(app, event):
     pass
 
@@ -59,10 +87,11 @@ def drawBoard(app, canvas):
             x1 = (row + 1)*app.tileWidth
             y1 = (col + 1)*app.tileHeight
             if app.colors[row][col] == 1:
-                placeTile(app, x0, y0, x1, y1, canvas, 'white')
+                placeTile(app, x0, y0, x1, y1, canvas, '#9CD3DB')
                 x, y = getIsoCoordinates(app, (x0+x1)/2, (y0+y1)/2)
-                canvas.create_image(x, y, image=
-                        ImageTk.PhotoImage(app.image1))
+                sprite = app.sprites[app.spriteCounter]
+                canvas.create_image(x, y - 20, image=ImageTk.PhotoImage(sprite))
+
 
             else:
                 color = '#9CD3DB'
