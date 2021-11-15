@@ -1,18 +1,29 @@
+# Major parts of the project to get working:
+# Get 3 different types of good cells
+
 from cmu_112_graphics import *
 import random
 import math
 
+class GoodCell(object):
+    
+    def __init__(self, app, name, pointValue, imgUrl):
+        self.name = name
+        self.pointValue = pointValue
+        self.imgUrl = imgUrl
+        self.image = app.loadImage(imgUrl)
+        self.image = app.scaleImage(self.image, 1/8)
+
 def appStarted(app):
     app.rows = 15
     app.cols = 15
-
     app.tileWidth = app.width//app.rows
     app.tileHeight = app.height//app.cols
 
     app.colors = [([0] * app.cols) for row in range(app.rows)]
     app.currentGreenX = random.randint(0, app.cols)
     app.currentGreenY = 0
-    app.colors[app.currentGreenX][app.currentGreenY] = 1
+    #app.colors[app.currentGreenX][app.currentGreenY] = 1
     url = 'https://www.freepnglogos.com/uploads/dna-png/dna-profiling-esr-12.png'
     app.image1 = app.loadImage(url)
     app.image1 = app.scaleImage(app.image1, 1/8)
@@ -21,7 +32,6 @@ def appStarted(app):
     app.spritestrip = app.loadImage(url)
     app.spritestrip = app.scaleImage(app.spritestrip, 1/4)
     app.spritestrip = app.spritestrip.transpose(Image.FLIP_LEFT_RIGHT)
-
     app.sprites = getSprites(app, app.spritestrip)    
     app.spriteCounter = 0
     app.currentTime = 0
@@ -29,14 +39,23 @@ def appStarted(app):
     app.atpImage = app.loadImage('sun.png')
     app.atpImage = app.scaleImage(app.atpImage, 1/20)
     app.atpWidth, app.atpHeight = app.atpImage.size
+    
+    app.cardWidth = 75
+    app.cardHeight = 90
+    app.cardImgWidth = 15
+    app.cardImgHeight = 15
 
     app.atp = []
     app.collectedATP = 0
     
-    #app.rotationMatrix = [[math.cos(0), - math.sin(0)],
-                      #[math.sin(0), math.cos(0)]]
-    app.rotationMatrix = [[math.cos(math.pi/10), - math.sin(math.pi/10)],
-                      [math.sin(math.pi/10), math.cos(math.pi/10)]]
+    app.rotationMatrix = [[math.cos(0), - math.sin(0)],
+                          [math.sin(0),   math.cos(0)]]
+    
+    app.goodCells = []
+    app.goodCells.append(GoodCell(app, "good cell 1", 25, "cell.jpeg"))
+    app.goodCells.append(GoodCell(app, "good cell 2", 50, "cell.jpeg"))
+    app.goodCells.append(GoodCell(app, "good cell 3", 75, "cell.jpeg"))
+
 
 def getSprites(app, strip):
     sprites = [ ]
@@ -76,7 +95,7 @@ def timerFired(app):
     app.currentTime += app.timerDelay
     app.spriteCounter = (1 + app.spriteCounter) % len(app.sprites)
     if app.currentTime % 3000 == 0:
-        if app.currentGreenY < app.cols - 1:
+        if app.currentGreenY < (app.cols - 2):
             app.currentGreenY += 1  
             changeColor(app, app.currentGreenX, app.currentGreenY)
     
@@ -94,11 +113,12 @@ def mousePressed(app, event):
         halfWidth = app.atpWidth//2
         halfHeight = app.atpHeight//2
 
+        #checking if mouse click is in an atp
         if ((event.x >= atp[0] - halfWidth and event.x <= atp[0] + halfWidth) and 
             (event.y >= atp[1] - halfHeight and event.y <= atp[1] + halfHeight)):
             app.atp.pop(i)
             print(app.atp)
-            app.collectedATP += 1
+            app.collectedATP += 25
         else:
             i += 1
 
@@ -161,11 +181,40 @@ def drawATP(app, canvas):
         canvas.create_image(atp[0], atp[1], image=ImageTk.PhotoImage(app.atpImage))
 
 def drawCollectedATP(app, canvas):
-    canvas.create_rectangle(5, 5, 230, 80, fill = 'white')
-    canvas.create_image(50, 40, image=ImageTk.PhotoImage(app.atpImage))
+    canvas.create_image(50, 50, image=ImageTk.PhotoImage(app.atpImage))
     font = 'Sans 18'
-    canvas.create_text(50 + 30,  40, text= "ATP Collected: " + str(app.collectedATP), 
-                       font=font, anchor = 'w')
+    canvas.create_text(45, 50 + 40, text= str(app.collectedATP), 
+                       font=font, anchor = 'center')
+
+def round_rectangle(canvas, x1, y1, x2, y2, r=25, **kwargs):    
+    points = (x1+r, y1, x1+r, y1, x2-r, y1, x2-r, y1, 
+              x2, y1, x2, y1+r, x2, y1+r, x2, y2-r, 
+              x2, y2-r, x2, y2, x2-r, y2, x2-r, y2, 
+              x1+r, y2, x1+r, y2, x1, y2, x1, y2-r, 
+              x1, y2-r, x1, y1+r, x1, y1+r, x1, y1)
+    return canvas.create_polygon(points, **kwargs, smooth=True)
+
+def drawTopBar(app, canvas):
+    startX, startY = 5, 5
+    endX, endY = 500, 105
+    height, width = endX - startX, endY - startY
+    round_rectangle(canvas, startX, startY, endX, endY, fill = '#BB8D6F')
+    drawCollectedATP(app, canvas)
+    for i in range(len(app.goodCells)):
+        goodCell = app.goodCells[i]
+        drawGoodCellCard(goodCell, app, canvas, 80 + i*app.cardWidth, startY + 5)
+    
+def drawGoodCellCard(goodCell, app, canvas, x, y):
+    if app.collectedATP < goodCell.pointValue:
+        color = '#D3D3D3'
+    else: color = 'white'
+    round_rectangle(canvas, x + 5, y, x + app.cardWidth, y + app.cardHeight, r = 10, fill = color)
+    font = 'Sans 12'
+    #canvas.create_image(x, y, image=ImageTk.PhotoImage(goodCell.image))
+    canvas.create_text(x + app.cardWidth/2, y + app.cardHeight - 25, text= str(goodCell.name), 
+                       font=font, anchor = 'center')
+    canvas.create_text(x + app.cardWidth/2, y + app.cardHeight - 10, text= str(goodCell.pointValue), 
+                       font=font, anchor = 'center')
     
 
 def placeTile(app, x0, y0, x1, y1, canvas, color):
@@ -199,7 +248,7 @@ def getIsoCoordinates(app, x, y):
 def redrawAll(app, canvas):
     drawBoard(app, canvas)
     drawATP(app, canvas)
-    drawCollectedATP(app, canvas)
+    drawTopBar(app, canvas)
 
 runApp(width=1200, height=1200)
 
