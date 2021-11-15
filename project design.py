@@ -14,6 +14,14 @@ class GoodCell(object):
         self.image = app.loadImage(imgUrl)
         self.image = app.scaleImage(self.image, 1/8)
 
+class Mutation(object):
+    
+    def __init__(self, app, name, imgUrl):
+        self.name = name
+        self.imgUrl = imgUrl
+        self.image = app.loadImage(imgUrl)
+        self.image = app.scaleImage(self.image, 1/8)
+
 def appStarted(app):
     app.rows = 9
     app.cols = 9
@@ -57,7 +65,6 @@ def appStarted(app):
     app.goodCells.append(GoodCell(app, "good cell 3", 75, "cell.jpeg"))
     app.goodCells.append(GoodCell(app, "good cell 4", 75, "cell.jpeg"))
     app.goodCells.append(GoodCell(app, "good cell 5", 75, "cell.jpeg"))
-
 
 def getSprites(app, strip):
     sprites = [ ]
@@ -219,7 +226,6 @@ def drawGoodCellCard(goodCell, app, canvas, x, y):
     canvas.create_text(x + app.cardWidth/2, y + app.cardHeight - 10, text= str(goodCell.pointValue), 
                        font=font, anchor = 'center')
     
-
 def placeTile(app, x0, y0, x1, y1, canvas, color):
 
     isox0, isoy0 = getIsoCoordinates(app, x0, y0)
