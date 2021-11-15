@@ -15,13 +15,13 @@ class GoodCell(object):
         self.image = app.scaleImage(self.image, 1/8)
 
 def appStarted(app):
-    app.rows = 15
-    app.cols = 15
+    app.rows = 9
+    app.cols = 9
     app.tileWidth = app.width//app.rows
     app.tileHeight = app.height//app.cols
 
     app.colors = [([0] * app.cols) for row in range(app.rows)]
-    app.currentGreenX = random.randint(0, app.cols)
+    app.currentGreenX = random.randint(0, app.cols - 1)
     app.currentGreenY = 0
     #app.colors[app.currentGreenX][app.currentGreenY] = 1
     url = 'https://www.freepnglogos.com/uploads/dna-png/dna-profiling-esr-12.png'
@@ -55,6 +55,8 @@ def appStarted(app):
     app.goodCells.append(GoodCell(app, "good cell 1", 25, "cell.jpeg"))
     app.goodCells.append(GoodCell(app, "good cell 2", 50, "cell.jpeg"))
     app.goodCells.append(GoodCell(app, "good cell 3", 75, "cell.jpeg"))
+    app.goodCells.append(GoodCell(app, "good cell 4", 75, "cell.jpeg"))
+    app.goodCells.append(GoodCell(app, "good cell 5", 75, "cell.jpeg"))
 
 
 def getSprites(app, strip):
@@ -95,7 +97,7 @@ def timerFired(app):
     app.currentTime += app.timerDelay
     app.spriteCounter = (1 + app.spriteCounter) % len(app.sprites)
     if app.currentTime % 3000 == 0:
-        if app.currentGreenY < (app.cols - 2):
+        if app.currentGreenY < (app.cols - 1):
             app.currentGreenY += 1  
             changeColor(app, app.currentGreenX, app.currentGreenY)
     
@@ -155,7 +157,7 @@ def changeColor(app, currentX, currentY):
 
 def drawBoard(app, canvas):
     canvas.create_oval(0, app.height/app.cols, app.width, 
-                        app.height - app.height/app.cols, 
+                        app.height - 20, 
                         fill = '#9CD3DB', outline = '#a9edff')
     for row in range(app.rows):
         for col in range(app.cols):
@@ -196,7 +198,8 @@ def round_rectangle(canvas, x1, y1, x2, y2, r=25, **kwargs):
 
 def drawTopBar(app, canvas):
     startX, startY = 5, 5
-    endX, endY = 500, 105
+    endX, endY = startX + (app.cardWidth + 5)*len(app.goodCells) + 80, 105
+    #endX, endY = 500, 105
     height, width = endX - startX, endY - startY
     round_rectangle(canvas, startX, startY, endX, endY, fill = '#BB8D6F')
     drawCollectedATP(app, canvas)
@@ -240,8 +243,8 @@ def placeTile(app, x0, y0, x1, y1, canvas, color):
                           fill = color, outline = '#a9edff')
 
 def getIsoCoordinates(app, x, y):
-    x_grid = app.width/2 + (x - y)/2.1
-    y_grid = app.height/app.cols + (x + y)/(app.cols/4)
+    x_grid = app.width/2 + 1.25*(x - y)/3
+    y_grid = app.height/app.cols + 1.25*(x + y)/(app.cols/2)
 
     return(x_grid, y_grid)
 
