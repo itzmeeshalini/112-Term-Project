@@ -1,13 +1,143 @@
-# Major parts of the project to get working:
-# Get 3 different types of good cells
-# ATP Synthase produces Energy
-# DNA Polymerase stops the mutation temporarily 
-# in its tracks to try to correct it
-# - can turn into a mutation since you use it so early on
-
 from cmu_112_graphics import *
 import random
 import math
+
+##########################################
+# Home Screen Mode
+##########################################
+
+def homeScreenMode_redrawAll(app, canvas):
+    font = 'Arial 26 bold'
+    canvas.create_text(app.width/2, 150, text='This demos a ModalApp!', font=font)
+    canvas.create_text(app.width/2, 200, text='This is a modal splash screen!', font=font)
+    canvas.create_text(app.width/2, 250, text='Press any key for the game!', font=font)
+
+def homeScreenMode_keyPressed(app, event):
+    app.mode = 'gameMode'
+
+##########################################
+# Game Mode
+##########################################
+
+def gameMode_timerFired(app):
+    app.currentTime += app.timerDelay
+    for enzyme in app.boardEnzymes:
+        if isinstance(enzyme, Enzyme):
+            enzyme[0].updateTime()
+    app.spriteCounter = (1 + app.spriteCounter) % len(app.sprites)
+    if app.currentTime % 5000 == 0:
+        print("updating")
+        updateMutationLocation(app, app.currentGreenX, app.currentGreenY + 1)
+
+    if app.currentTime % 8000 == 200:
+        randomx = random.randint(0, app.width)
+        randomy = 400
+        placeATP(app, randomx, randomy)
+    
+    for atp in app.atp:
+        if atp[1] <= app.width:
+            atp[1] += 1
+    
+    for enzyme in app.enzymes:
+        if isinstance(enzyme, Enzyme):
+            if app.collectedATP >= enzyme.pointValue:
+                enzyme.notEnoughATP = False
+            else: enzyme.notEnoughATP = True
+    
+    for enzyme in app.boardEnzymes:
+        if isinstance(enzyme, Enzyme):
+            if enzyme[0].name == "ATP Synthase" and enzyme[0].time % 10000 == 0:
+                placeATP(app, enzyme[1], enzyme[2])
+
+def gameMode_mousePressed(app, event):
+    index = checkMouseInCard(app, event)
+    print(index, type(app.enzyme))
+    if index != None and (app.enzyme == None or isinstance(app.enzyme, Enzyme) or isinstance(app.enzyme, list)): 
+        app.enzyme = app.enzymes[index]
+        if (app.enzyme == None or isinstance(app.enzyme, Enzyme)):
+            app.enzymeX = app.enzyme.x
+            app.enzymeY = app.enzyme.y
+        elif app.enzyme == None or not isinstance(app.enzyme, Enzyme):
+            app.enzymeX = app.enzyme[1]
+            app.enzymeY = app.enzyme[2]
+        app.dragCard = True
+        print(app.dragCard)
+        
+    i = 0
+    while (i < len(app.atp)):
+        atp = app.atp[i]
+        halfWidth = app.atpWidth//2
+        halfHeight = app.atpHeight//2
+
+        #checking if mouse click is in an atp
+        if ((event.x >= atp[0] - halfWidth and event.x <= atp[0] + halfWidth) and 
+            (event.y >= atp[1] - halfHeight and event.y <= atp[1] + halfHeight)):
+            app.atp.pop(i)
+            app.collectedATP += 25
+        else:
+            i += 1
+
+def gameMode_mouseDragged(app, event):
+    if (not isinstance(app.enzyme, Enzyme) and app.dragCard and 
+        (event.x >= 0 and event.x < app.width) and 
+        (event.y >= 0 and event.y < app.height)):
+        app.enzymeX, app.enzymeY = event.x - app.cardWidth//2, event.y - app.cardHeight//2
+
+    
+    elif (app.dragCard and app.enzyme.available and not app.enzyme.notEnoughATP and 
+        (event.x >= 0 and event.x < app.width) and 
+        (event.y >= 0 and event.y < app.height)):
+        app.enzymeX, app.enzymeY = event.x - app.cardWidth//2, event.y - app.cardHeight//2
+
+def gameMode_mouseReleased(app, event):
+    if app.dragCard == True and app.enzyme != None and isinstance(app.enzyme, Enzyme) and app.enzymeY > 200:
+        app.enzyme.changeAvailability()
+        app.dragCard = False
+        app.collectedATP -= app.enzyme.pointValue
+        updateBoard(app, event)
+            
+    elif app.dragCard == True and app.enzyme != None and app.enzyme[0] == "Shovel" and app.enzymeY > 200:
+        app.dragCard = False
+        updateBoard(app, event)
+
+
+def gameMode_keyPressed(app, event):
+    if event.key == 'Down':
+        if app.currentGreenY < app.cols - 1:
+            app.colors[app.currentGreenX][app.currentGreenY] = 0
+            app.currentGreenY += 1
+            app.colors[app.currentGreenX][app.currentGreenY] = 1
+
+    elif event.key == 'Up':
+        if app.currentGreenY > 0:
+            app.colors[app.currentGreenX][app.currentGreenY] = 0
+            app.currentGreenY -= 1
+            app.colors[app.currentGreenX][app.currentGreenY] = 1
+        
+    elif event.key == 'Right':
+        if app.currentGreenX < app.rows - 1:
+            app.colors[app.currentGreenX][app.currentGreenY] = 0
+            app.currentGreenX += 1
+            app.colors[app.currentGreenX][app.currentGreenY] = 1
+
+    elif event.key == 'Left':
+        if app.currentGreenX > 0:
+            app.colors[app.currentGreenX][app.currentGreenY] = 0
+            app.currentGreenX -= 1
+            app.colors[app.currentGreenX][app.currentGreenY] = 1
+
+def gameMode_redrawAll(app, canvas):
+    drawBoard(app, canvas)
+    drawATP(app, canvas)
+    drawTopBar(app, canvas)
+    drawMessageBox(app, canvas)
+    if app.dragCard:
+        drawenzymeCard(app.enzyme, app, canvas, app.enzymeX, app.enzymeY)
+
+
+##########################################
+# Main App
+##########################################
 
 class Enzyme(object):
     
@@ -56,6 +186,8 @@ class Mutation(object):
         pass
 
 def appStarted(app):
+    app.mode = 'homeScreenMode'
+    
     app.rows = 9
     app.cols = 9
     app.tileWidth = app.width//app.rows
@@ -94,8 +226,9 @@ def appStarted(app):
     
     app.enzymes = []
     app.enzymes.append(Enzyme(app, "ATP Synthase", 25, "atp synthase.png", 0, 3, 1/4))
-    app.enzymes.append(Enzyme(app, "DNA Polymerase", 50, "cell.jpeg", 1, 3, 1/10))
-    app.enzymes.append(Enzyme(app, "Telomerase", 100, "cell.jpeg", 2, 3, 1/10))
+    app.enzymes.append(Enzyme(app, "Telomerase", 50, "cell.jpeg", 2, 3, 1/10))
+    app.enzymes.append(Enzyme(app, "DNA Polymerase", 100, "dna polymerase.png", 1, 2, 1/3))
+
     app.enzymes.append(["Shovel", 0, 0])
 
     for i in range(len(app.enzymes)):
@@ -130,112 +263,6 @@ def getSprites(app, strip):
         sprites.append(sprite)
     return sprites
 
-def keyPressed(app, event):
-    if event.key == 'Down':
-        if app.currentGreenY < app.cols - 1:
-            app.colors[app.currentGreenX][app.currentGreenY] = 0
-            app.currentGreenY += 1
-            app.colors[app.currentGreenX][app.currentGreenY] = 1
-
-    elif event.key == 'Up':
-        if app.currentGreenY > 0:
-            app.colors[app.currentGreenX][app.currentGreenY] = 0
-            app.currentGreenY -= 1
-            app.colors[app.currentGreenX][app.currentGreenY] = 1
-        
-    elif event.key == 'Right':
-        if app.currentGreenX < app.rows - 1:
-            app.colors[app.currentGreenX][app.currentGreenY] = 0
-            app.currentGreenX += 1
-            app.colors[app.currentGreenX][app.currentGreenY] = 1
-
-    elif event.key == 'Left':
-        if app.currentGreenX > 0:
-            app.colors[app.currentGreenX][app.currentGreenY] = 0
-            app.currentGreenX -= 1
-            app.colors[app.currentGreenX][app.currentGreenY] = 1
-
-def timerFired(app):
-    app.currentTime += app.timerDelay
-    for enzyme in app.boardEnzymes:
-        if isinstance(enzyme, Enzyme):
-            enzyme[0].updateTime()
-    app.spriteCounter = (1 + app.spriteCounter) % len(app.sprites)
-    if app.currentTime % 5000 == 0:
-        print("updating")
-        updateMutationLocation(app, app.currentGreenX, app.currentGreenY + 1)
-
-    if app.currentTime % 8000 == 200:
-        randomx = random.randint(0, app.width)
-        randomy = 400
-        placeATP(app, randomx, randomy)
-    
-    for atp in app.atp:
-        if atp[1] <= app.width:
-            atp[1] += 1
-    
-    for enzyme in app.enzymes:
-        if isinstance(enzyme, Enzyme):
-            if app.collectedATP >= enzyme.pointValue:
-                enzyme.notEnoughATP = False
-            else: enzyme.notEnoughATP = True
-    
-    for enzyme in app.boardEnzymes:
-        if isinstance(enzyme, Enzyme):
-            if enzyme[0].name == "ATP Synthase" and enzyme[0].time % 10000 == 0:
-                placeATP(app, enzyme[1], enzyme[2])
-            
-def mousePressed(app, event):
-    index = checkMouseInCard(app, event)
-    print(index, type(app.enzyme))
-    if index != None and (app.enzyme == None or isinstance(app.enzyme, Enzyme) or isinstance(app.enzyme, list)): 
-        app.enzyme = app.enzymes[index]
-        if (app.enzyme == None or isinstance(app.enzyme, Enzyme)):
-            app.enzymeX = app.enzyme.x
-            app.enzymeY = app.enzyme.y
-        elif app.enzyme == None or not isinstance(app.enzyme, Enzyme):
-            app.enzymeX = app.enzyme[1]
-            app.enzymeY = app.enzyme[2]
-        app.dragCard = True
-        print(app.dragCard)
-        
-    i = 0
-    while (i < len(app.atp)):
-        atp = app.atp[i]
-        halfWidth = app.atpWidth//2
-        halfHeight = app.atpHeight//2
-
-        #checking if mouse click is in an atp
-        if ((event.x >= atp[0] - halfWidth and event.x <= atp[0] + halfWidth) and 
-            (event.y >= atp[1] - halfHeight and event.y <= atp[1] + halfHeight)):
-            app.atp.pop(i)
-            app.collectedATP += 25
-        else:
-            i += 1
-
-def mouseDragged(app, event):
-    
-    if (not isinstance(app.enzyme, Enzyme) and app.dragCard and 
-        (event.x >= 0 and event.x < app.width) and 
-        (event.y >= 0 and event.y < app.height)):
-        app.enzymeX, app.enzymeY = event.x - app.cardWidth//2, event.y - app.cardHeight//2
-
-    
-    elif (app.dragCard and app.enzyme.available and not app.enzyme.notEnoughATP and 
-        (event.x >= 0 and event.x < app.width) and 
-        (event.y >= 0 and event.y < app.height)):
-        app.enzymeX, app.enzymeY = event.x - app.cardWidth//2, event.y - app.cardHeight//2
-
-def mouseReleased(app, event):
-    if app.dragCard == True and app.enzyme != None and isinstance(app.enzyme, Enzyme) and app.enzymeY > 200:
-        app.enzyme.changeAvailability()
-        app.dragCard = False
-        app.collectedATP -= app.enzyme.pointValue
-        updateBoard(app, event)
-            
-    elif app.dragCard == True and app.enzyme != None and app.enzyme[0] == "Shovel" and app.enzymeY > 200:
-        app.dragCard = False
-        updateBoard(app, event)
 
 def updateBoard(app, event):
     x, y = getCartesianCoordinates(app, event.x, event.y)
@@ -425,19 +452,5 @@ def getCartesianCoordinates(app, x_grid, y_grid):
     y = (app.cols*y_grid - 6*x_grid - app.height + 3*app.width)/5
     return(x, y)
 
-def redrawAll(app, canvas):
-    drawBoard(app, canvas)
-    drawATP(app, canvas)
-    drawTopBar(app, canvas)
-    drawMessageBox(app, canvas)
-    if app.dragCard:
-        drawenzymeCard(app.enzyme, app, canvas, app.enzymeX, app.enzymeY)
 
 runApp(width=1200, height=1200)
-
-# "zombies" are oncogenes
-# if good, functioning genes come into contact with the oncogenes, 
-# then there is a faster rate of them making mistakes and causing 
-# more mutations, which produce more oncogenes
-# or, the good genes also turn into mutated genes to fight the remaining bad genes
-# each time the dna repairing 
