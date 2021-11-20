@@ -8,52 +8,9 @@
 from cmu_112_graphics import *
 import random
 import math
+from Enzyme import *
+from Mutation import *
 
-class Enzyme(object):
-    
-    def __init__(self, app, name, pointValue, imgUrl, index, count, scale):
-        self.name = name
-        self.pointValue = pointValue
-        self.imgUrl = imgUrl
-        self.image = app.loadImage(imgUrl)
-        self.image = app.scaleImage(self.image, scale)
-        self.listIndex = index
-        self.count = count
-        
-        self.available = self.count > 0
-        self.notEnoughATP = True
-        self.x = 0
-        self.y = 0
-        self.time = 0
-
-    def setPosition(self, x, y):
-        self.x = x
-        self.y = y
-    
-    def changeAvailability(self):
-        self.count -= 1
-        self.available = self.count > 0
-        
-    def updateTime(self):
-        self.time += 100
-
-    
-class Mutation(object):
-    
-    def __init__(self, app, name, imgUrl, hits, x, y):
-        self.name = name
-        self.imgUrl = imgUrl
-        self.image = app.loadImage(imgUrl)
-        self.image = app.scaleImage(self.image, 1/8)
-        self.hits = hits
-        self.x = x
-        self.y = y
-        
-    def getHit(self):
-        #change number of hits left
-        #change image if hits is in a certain region
-        self.hits -= 1
-        pass
 
 def appStarted(app):
     app.rows = 9
@@ -77,7 +34,7 @@ def appStarted(app):
     app.spriteCounter = 0
     app.currentTime = 0
     
-    app.atpImage = app.loadImage('sun.png')
+    app.atpImage = app.loadImage('images/sun.png')
     app.atpImage = app.scaleImage(app.atpImage, 1/20)
     app.atpWidth, app.atpHeight = app.atpImage.size
     
@@ -87,15 +44,15 @@ def appStarted(app):
     app.cardImgHeight = 15
 
     app.atp = []
-    app.collectedATP = 0
+    app.collectedATP = 100
     
     app.rotationMatrix = [[math.cos(0), - math.sin(0)],
                           [math.sin(0),   math.cos(0)]]
     
     app.enzymes = []
-    app.enzymes.append(Enzyme(app, "ATP Synthase", 25, "atp synthase.png", 0, 3, 1/4))
-    app.enzymes.append(Enzyme(app, "DNA Polymerase", 50, "cell.jpeg", 1, 3, 1/10))
-    app.enzymes.append(Enzyme(app, "Telomerase", 100, "cell.jpeg", 2, 3, 1/10))
+    app.enzymes.append(Enzyme(app, "ATP Synthase", 25, "images/atp synthase.png", 0, 3, 1/4))
+    app.enzymes.append(Enzyme(app, "DNA Polymerase", 50, "images/cell.jpeg", 1, 3, 1/10))
+    app.enzymes.append(Enzyme(app, "Telomerase", 100, "images/cell.jpeg", 2, 3, 1/10))
     app.enzymes.append(["Shovel", 0, 0])
 
     for i in range(len(app.enzymes)):
@@ -119,7 +76,7 @@ def appStarted(app):
     
     app.directions = [(-1, 0), (+1, 0), (0, +1), (0, -1)]
     
-    app.shovelImage = app.loadImage('shovel.png')
+    app.shovelImage = app.loadImage('images/shovel.png')
     app.shovelImage = app.scaleImage(app.shovelImage, 1/30)
     app.shovelImage = app.shovelImage.transpose(Image.FLIP_LEFT_RIGHT)
 
