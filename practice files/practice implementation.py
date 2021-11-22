@@ -13,20 +13,23 @@ def appStarted(app):
     app.startTotalHeight = 4.5
     app.totalHeight = app.startTotalHeight
     app.currentLocation = (0, 0)
+    app.isoWidth = 0
+    app.isoHeight = 0
 
     app.colors = [([0] * app.cols) for row in range(app.rows)]
     app.currentGreenX = 0
     app.currentGreenY = 0
     app.rotateMode = False
     app.panMode = False
-    app.rotationMatrix = [[math.cos(0), - math.sin(0)],
-                          [math.sin(0),   math.cos(0)]]
+    angle = -math.pi/3
+    app.rotationMatrix = [[math.cos(angle), - math.sin(angle)],
+                          [math.sin(angle),   math.cos(angle)]]
     
     app.isoMatrix = [[app.isoTileWidth/app.totalWidth, app.isoTileWidth/app.totalWidth],
                      [-app.isoTileWidth/app.totalHeight, app.isoTileWidth/app.totalHeight]]
 
-    app.transformation = [[math.sqrt(3)/5, 0/5],
-                          [1/5, 2/5]]
+    app.transformation = [[math.sqrt(3)*app.isoTileWidth/app.totalWidth/2, 0],
+                          [app.isoTileWidth/app.totalWidth/2, 2*app.isoTileWidth/app.totalHeight/2]]
     #app.transformation = matrixMultiply(app.transformation, app.isoMatrix)
 
 def keyPressed(app, event):
@@ -53,10 +56,27 @@ def keyPressed(app, event):
     elif event.key == 'p':
         app.panMode = not app.panMode
         app.rotateMode = False
+        if app.panMode: print("in pan mode")
     
     elif event.key == 'r':
         app.rotateMode = not app.rotateMode
         app.panMode = False
+    
+    elif event.key == "Space":
+        theta = -math.pi/3
+        app.rotationMatrix = [[math.cos(theta), - math.sin(theta)],
+                              [math.sin(theta),   math.cos(theta)]]
+        
+        
+        app.isoTileWidth = 1.25
+        app.totalWidth= 3
+        app.startTotalHeight = 4.5
+        app.totalHeight = app.startTotalHeight
+        #app.transformation = [[math.sqrt(3)*app.isoTileWidth/app.totalWidth/2, 0],
+                          #[app.isoTileWidth/app.totalWidth/2, 2*app.isoTileWidth/app.totalHeight/2]]
+
+        app.transformation = [[math.sqrt(3)*app.isoTileWidth/app.totalWidth/2, 0],
+                              [0, 2*app.isoTileWidth/app.totalHeight/2]]
 
 
 def timerFired(app):
@@ -72,14 +92,18 @@ def mouseDragged(app, event):
         print(locationChange)
         app.tempTotalHeight = app.totalHeight - locationChange[1]//25
         print(app.tempTotalHeight)
-        if 1/app.tempTotalHeight > 0 and 1/app.tempTotalHeight <= 1/app.startTotalHeight:
+        if app.tempTotalHeight/app.totalWidth <= 1:
             app.totalHeight = app.tempTotalHeight
-            app.isoMatrix = [[app.isoTileWidth/app.totalWidth, app.isoTileWidth/app.totalWidth],
-                     [-app.isoTileWidth/app.totalHeight, app.isoTileWidth/app.totalHeight]]
+            #app.transformation = [[math.sqrt(3)*app.isoTileWidth/app.totalWidth/2, 0],
+                          #[app.isoTileWidth/app.totalWidth/2, 2*app.isoTileWidth/app.totalHeight/2]]
+
+            app.transformation = [[math.sqrt(3)*app.isoTileWidth/app.totalWidth/2, 0],
+                                  [0, 2*app.isoTileWidth/app.totalHeight/2]]
+
     elif app.rotateMode:
         theta = getAngle(app, event)
         app.rotationMatrix = [[math.cos(theta), - math.sin(theta)],
-                              [math.sin(theta),   math.cos(theta)]]
+                                [math.sin(theta),   math.cos(theta)]]
 
 def getAngle(app, event):
     cx = app.width/2
@@ -112,36 +136,36 @@ def placeTile(app, x0, y0, x1, y1, canvas, color):
 
     isox0, isoy0 = getIsoCoordinates(app, x0, y0)
     isox0, isoy0 = isox0 - app.width/2, isoy0 - app.height/2
+    isox0, isoy0 = isox0 - 415/2, isoy0 - 480/2
     rotation = matrixMultiply(app.rotationMatrix, [[isox0], [isoy0]])
     isox0, isoy0 = rotation[0][0], rotation[1][0]
     isox0, isoy0 = isox0 + app.width/2, isoy0 + app.height/2
-    isox0, isoy0 = isox0 - 415/2, isoy0 - 480/2
+    
 
     
     isox1, isoy1 = getIsoCoordinates(app, x1, y0)
-    isox1, isoy1 = isox1 - app.width/2, isoy1 - app.height/2  
+    isox1, isoy1 = isox1 - app.width/2, isoy1 - app.height/2 
+    isox1, isoy1 = isox1 - 415/2, isoy1 - 480/2
     rotation = matrixMultiply(app.rotationMatrix, [[isox1], [isoy1]])
     isox1, isoy1 = rotation[0][0], rotation[1][0]
     isox1, isoy1 = isox1 + app.width/2, isoy1 + app.height/2
-    isox1, isoy1 = isox1 - 415/2, isoy1 - 480/2
 
 
     isox2, isoy2 = getIsoCoordinates(app, x1, y1)
-    isox2, isoy2 = isox2 - app.width/2, isoy2 - app.height/2    
+    isox2, isoy2 = isox2 - app.width/2, isoy2 - app.height/2 
+    isox2, isoy2 = isox2 - 415/2, isoy2 - 480/2   
     rotation = matrixMultiply(app.rotationMatrix, [[isox2], [isoy2]])
     isox2, isoy2 = rotation[0][0], rotation[1][0]
     isox2, isoy2 = isox2 + app.width/2, isoy2 + app.height/2
-    isox2, isoy2 = isox2 - 415/2, isoy2 - 480/2
 
     
     isox3, isoy3 = getIsoCoordinates(app, x0, y1)
-    isox3, isoy3 = isox3 - app.width/2, isoy3 - app.height/2    
+    isox3, isoy3 = isox3 - app.width/2, isoy3 - app.height/2  
+    isox3, isoy3 = isox3 - 415/2, isoy3 - 480/2  
     rotation = matrixMultiply(app.rotationMatrix, [[isox3], [isoy3]])
     isox3, isoy3 = rotation[0][0], rotation[1][0]
     isox3, isoy3 = isox3 + app.width/2, isoy3 + app.height/2
-    isox3, isoy3 = isox3 - 415/2, isoy3 - 480/2
-
-
+    
     canvas.create_polygon(isox0, isoy0, isox1, isoy1,
                           isox2, isoy2, isox3, isoy3, 
                           fill = color, outline = '#a9edff')
@@ -153,6 +177,10 @@ def placeTile(app, x0, y0, x1, y1, canvas, color):
                        font="Sans 8", anchor = 'center')
     canvas.create_text(isox3, isoy3, text= f'{isox3//1}, {isoy3//1}', 
                        font="Sans 8", anchor = 'center')
+
+def calculateIso(app, isox0, isoy0, isox2, isoy2):
+    app.isoWidth = isox2 - isox0
+    app.isoHeight = isoy2 - isoy0
 
 def getIsoCoordinates(app, x, y):
     x_grid = app.width/2 + app.isoTileWidth*(x - y)/app.totalWidth
@@ -191,8 +219,11 @@ def calculateAngle(app, x, y):
     leg1 = abs(y - cy)
     leg2 = abs(x - cx)
     hypo = math.sqrt(leg1**2 + leg2**2)
-    
-    return math.sin(leg2/hypo)
+
+    if y >= cy:
+        return math.sin(leg2/hypo)
+    else:
+        return -math.sin(leg2/hypo)
     
 def redrawAll(app, canvas):
     drawBoard(app, canvas)

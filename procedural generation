@@ -1,0 +1,54 @@
+
+app.collectedATP = 100
+
+
+app.enzymes = []
+app.enzymes.append(Enzyme(app, "ATP Synthase", 25, "images/atp synthase.png", len(app.enzymes), 3, 1/4))
+app.enzymes.append(Enzyme(app, "Caspase", 50, "images/caspase.png", len(app.enzymes), 3, 1/7))
+app.enzymes.append(Enzyme(app, "DNA Polymerase", 100, "images/dna polymerase.png", len(app.enzymes), 2, 1/3))
+app.enzymes.append(["Shovel", 0, 0])
+
+for i in range(len(app.enzymes)):
+    enzyme = app.enzymes[i]
+    if isinstance(enzyme, Enzyme):
+        enzyme.setPosition(80 + i*app.cardWidth, 5 + 5)
+    else:
+        enzyme[1], enzyme[2] = 80 + i*app.cardWidth, 5 + 5
+
+app.boardEnzymes = []
+app.mutations = []
+app.caspaseShoot = []
+
+#setting up model configurations for the board 
+app.board = [([0] * app.cols) for row in range(app.rows)]
+row = random.randint(0, app.cols - 1)
+col = 0
+x, y = getCoordinates(app, row, col)
+app.mutations.append(Mutation(app, "Normal Mutation", app.url, app.hitsPerMutation, x, y, row, col))
+app.setNumberMutations = app.level
+app.mutationsPassed = 1
+app.mutationsKilled = 0
+app.progress = 0
+app.hitsPerMutation = 5
+app.totalHits = app.setNumberMutations*app.hitsPerMutation
+
+
+#helper variables for dragging
+app.dragCard = False
+app.enzymeX = 0
+app.enzymeY = 0
+app.enzyme = None
+
+# just reset:
+
+app.currentTime = 0
+app.atp = []
+app.rotationMatrix = [[math.cos(0), - math.sin(0)],
+                    [math.sin(0),   math.cos(0)]]
+app.progress = 0
+app.winTime = None
+app.hits = 0
+
+
+
+# procedurally generate:

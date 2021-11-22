@@ -1,3 +1,122 @@
+# from cmu_112_graphics import *
+# import math
+
+# def appStarted(app):
+
+#     app.rows = 10
+#     app.cols = 10
+#     app.angle = 0
+#     app.cube_position = [app.width//2, app.height//4]
+    
+
+# def keyPressed(app, event):
+#     if event.key == 'Space':
+#         app.angle = 0
+    
+# def mousePressed(app, event):
+#     app.currentLocation = (event.x, event.y)
+#     pass
+
+# def mouseDragged(app, event):
+    
+#     app.angle = getAngle(app, event)
+
+# def distance(x0, y0, x1, y1):
+#     return math.sqrt((x1 - x0)**2 + (y1 - y0)**2)
+
+# def getAngle(app, event):
+#     cx = app.width/2
+#     cy = app.height/2
+#     leg1 = cx - event.x
+#     leg2 = cy - event.y
+#     hypo = distance(cx, cy, event.x, event.y)
+#     angle = math.sin(leg1/hypo)
+#     return angle
+    
+    
+# def drawBoard(app, canvas):
+#     for row in range(app.rows):
+#         row = row - 5
+#         for col in range(app.cols):
+#             col = col - 5
+#             x0 = row
+#             y0 = col
+#             x1 = (row + 1)
+#             y1 = (col + 1)
+#             color = '#9CD3DB'
+#             placeTile(app, x0, y0, x1, y1, canvas, 
+#                     color)
+            
+# def getIsoCoordinates(app, x, y):
+#     point = [[x], [y], [0]]
+#     rotation_x = [[1, 0, 0],
+#                   [0, math.cos(app.angle), -math.sin(app.angle)],
+#                   [0, math.sin(app.angle), math.cos(app.angle)]]
+
+#     rotation_y = [[math.cos(app.angle), 0, -math.sin(app.angle)],
+#                   [0, 1, 0],
+#                   [math.sin(app.angle), 0, math.cos(app.angle)]]
+
+#     rotation_z = [[math.cos(app.angle), -math.sin(app.angle), 0],
+#                   [math.sin(app.angle), math.cos(app.angle), 0],
+#                   [0, 0 ,1]]
+
+    
+#     rotated_2d = matrix_multiplication(rotation_y, point)
+#     rotated_2d = matrix_multiplication(rotation_x, rotated_2d)
+#     rotated_2d = matrix_multiplication(rotation_z, rotated_2d)
+#     distance = 10
+#     z = 1/(distance - rotated_2d[2][0])
+#     projection_matrix = [[z, 0, 0],
+#                         [0, z, 0]]
+#     projected_2d = matrix_multiplication(projection_matrix, rotated_2d)
+
+#     x = int(projected_2d[0][0] * 600) + app.cube_position[0]
+#     y = int(projected_2d[1][0] * 600) + app.cube_position[1]
+    
+#     return x, y            
+
+# def placeTile(app, x0, y0, x1, y1, canvas, color):
+
+#     isox0, isoy0 = getIsoCoordinates(app, x0, y0)
+    
+#     isox1, isoy1 = getIsoCoordinates(app, x1, y0)
+
+#     isox2, isoy2 = getIsoCoordinates(app, x1, y1)
+      
+#     isox3, isoy3 = getIsoCoordinates(app, x0, y1)
+    
+#     canvas.create_polygon(isox0, isoy0, isox1, isoy1,
+#                           isox2, isoy2, isox3, isoy3, 
+#                           fill = color, outline = '#a9edff')
+
+# def redrawAll(app, canvas):
+#     drawBoard(app, canvas)
+        
+# runApp(width=1200, height=1200) 
+
+# def matrix_multiplication(a, b):
+#     columns_a = len(a[0])
+#     rows_a = len(a)
+#     columns_b = len(b[0])
+#     rows_b = len(b)
+
+#     result_matrix = [[j for j in range(columns_b)] for i in range(rows_a)]
+#     if columns_a == rows_b:
+#         for x in range(rows_a):
+#             for y in range(columns_b):
+#                 sum = 0
+#                 for k in range(columns_a):
+#                     sum += a[x][k] * b[k][y]
+#                 result_matrix[x][y] = sum
+#         return result_matrix
+
+#     else:
+#         print("columns of the first matrix must be equal to the rows of the second matrix")
+#         return None
+    
+    
+    
 from cmu_112_graphics import *
 import random
 import math
@@ -76,9 +195,6 @@ def gameMode_timerFired(app):
     #update the atp location after each call to move it
     updateATPLocation(app)
     
-    
-
-    
     #constantly checks if the enzymes have enough atp and changes availability if not
     
     for enzyme in app.enzymes:
@@ -148,7 +264,8 @@ def gameMode_mouseDragged(app, event):
         (event.x >= 0 and event.x < app.width) and 
         (event.y >= 0 and event.y < app.height)):
         app.enzymeX, app.enzymeY = event.x - app.cardWidth//2, event.y - app.cardHeight//2
-
+    else:
+        app.angle = getAngle(app, event)
 #function that takes care of what happens when mouse is released
 def gameMode_mouseReleased(app, event):
     #doesn't say that the user is dragging the card if mouse is released inside the top bar
@@ -168,32 +285,10 @@ def gameMode_mouseReleased(app, event):
         app.dragCard = False
         updateBoard(app, event)
 
-#different key options for moving the mutation (helping when testing)
-# def gameMode_keyPressed(app, event):
-#     if event.key == 'Down':
-#         if app.currentGreenY < app.cols - 1:
-#             app.board[app.currentGreenX][app.currentGreenY] = 0
-#             app.currentGreenY += 1
-#             app.board[app.currentGreenX][app.currentGreenY] = 1
-
-#     elif event.key == 'Up':
-#         if app.currentGreenY > 0:
-#             app.board[app.currentGreenX][app.currentGreenY] = 0
-#             app.currentGreenY -= 1
-#             app.board[app.currentGreenX][app.currentGreenY] = 1
+def keyPressed(app, event):
+    if event.key == 'Space':
+        app.angle = 0
         
-#     elif event.key == 'Right':
-#         if app.currentGreenX < app.rows - 1:
-#             app.board[app.currentGreenX][app.currentGreenY] = 0
-#             app.currentGreenX += 1
-#             app.board[app.currentGreenX][app.currentGreenY] = 1
-
-#     elif event.key == 'Left':
-#         if app.currentGreenX > 0:
-#             app.board[app.currentGreenX][app.currentGreenY] = 0
-#             app.currentGreenX -= 1
-#             app.board[app.currentGreenX][app.currentGreenY] = 1
-
 #calls all the drawing helper functions
 def gameMode_redrawAll(app, canvas):
     drawBoard(app, canvas)
@@ -279,6 +374,8 @@ def appStarted(app):
     app.cols = 9
     app.tileWidth = app.width//app.rows
     app.tileHeight = app.height//app.cols
+    app.center = [app.width//2, app.height//4]
+    app.angle = 0
         
     #setting up sprite configurations
     app.url = 'http://www.cs.cmu.edu/~112/notes/sample-spritestrip.png'
@@ -427,16 +524,24 @@ def generateLevel(app):
     pass
 
 def getCoordinates(app, row, col):
-    x0 = row*app.tileWidth
-    y0 = col*app.tileWidth
-    x1 = (row + 1)*app.tileWidth
-    y1 = (col + 1)*app.tileHeight
+    x0 = row
+    y0 = col
+    x1 = (row + 1)
+    y1 = (col + 1)
     x, y = getIsoCoordinates(app, (x0+x1)/2, (y0+y1)/2) 
-    point = [[x], [y]]
-    point = matrixMultiply(app.rotationMatrix, point)
-    x, y = point[0][0], point[1][0]
-    
     return (x, y)
+
+def distance(x0, y0, x1, y1):
+    return math.sqrt((x1 - x0)**2 + (y1 - y0)**2)
+
+def getAngle(app, event):
+    cx = app.width/2
+    cy = app.height/2
+    leg1 = cx - event.x
+    leg2 = cy - event.y
+    hypo = distance(cx, cy, event.x, event.y)
+    angle = math.sin(leg1/hypo)
+    return angle
 
 #updates the model of the board
 def updateBoard(app, event):
@@ -514,24 +619,25 @@ def make2dList(rows, cols):
 
 #multiplies matrices
 #retrieved from previous 112 homework (my own code that I submitted that week)
-def matrixMultiply(m1,m2):
-    #get the sizes of both lists
-    m1Rows, m1Cols = len(m1), len(m1[0])
-    m2Rows, m2Cols = len(m2), len(m2[0])
-    #if the dimensions don't match for matrix multiplication, return None
-    if m1Cols != m2Rows:
+def matrix_multiplication(a, b):
+    columns_a = len(a[0])
+    rows_a = len(a)
+    columns_b = len(b[0])
+    rows_b = len(b)
+
+    result_matrix = [[j for j in range(columns_b)] for i in range(rows_a)]
+    if columns_a == rows_b:
+        for x in range(rows_a):
+            for y in range(columns_b):
+                sum = 0
+                for k in range(columns_a):
+                    sum += a[x][k] * b[k][y]
+                result_matrix[x][y] = sum
+        return result_matrix
+
+    else:
+        print("columns of the first matrix must be equal to the rows of the second matrix")
         return None
-    #make a new list, loop through the rows of m1 and cols of m2
-    newMatrix = make2dList(m1Rows, m2Cols)
-    for i in range(m1Rows):
-        for j in range(m2Cols):
-            dotProduct = 0
-            #loop through each index in the row/column and add to dot product
-            for k in range(m1Cols):
-                dotProduct += m1[i][k] * m2[k][j]
-            #add the dotproduct to the ij'th position of the new matrix
-            newMatrix[i][j] = dotProduct
-    return newMatrix
 
 #changes the location of the mutation object by 
 #changing previous location to 0 and next location to 1
@@ -654,11 +760,13 @@ def drawBoard(app, canvas):
     #loops through each row and col in the board, 
     # gets x and y coordinates, and gets isometric coordinates from there
     for row in range(app.rows):
+        row = row - app.rows//2
         for col in range(app.cols):
-            x0 = row*app.tileWidth
-            y0 = col*app.tileWidth
-            x1 = (row + 1)*app.tileWidth
-            y1 = (col + 1)*app.tileHeight
+            col = col - app.cols//2
+            x0 = row
+            y0 = col
+            x1 = (row + 1)
+            y1 = (col + 1)
             x, y = getIsoCoordinates(app, (x0+x1)/2, (y0+y1)/2)
         
             #if the enzyme is the shovel, then remove whatever enzyme was there
@@ -670,10 +778,8 @@ def drawBoard(app, canvas):
             elif isinstance(app.board[row][col], Mutation):
                 if app.board[row][col].hits > 0:
                     placeTile(app, x0, y0, x1, y1, canvas, '#9CD3DB')
-                    point = [[x], [y]]
-                    point = matrixMultiply(app.rotationMatrix, point)
                     sprite = app.sprites[app.spriteCounter]
-                    canvas.create_image(point[0][0], point[1][0] - 20, image=ImageTk.PhotoImage(sprite))                
+                    canvas.create_image(x, y - 20, image=ImageTk.PhotoImage(sprite))                
                 else:
                     placeTile(app, x0, y0, x1, y1, canvas, '#9CD3DB')
             #if the value on the board here is 0, then place the empty tile there
@@ -772,33 +878,46 @@ def drawenzymeCard(enzyme, app, canvas, x, y):
 def placeTile(app, x0, y0, x1, y1, canvas, color):
 
     isox0, isoy0 = getIsoCoordinates(app, x0, y0)
-    rotation = matrixMultiply(app.rotationMatrix, [[isox0], [isoy0]])
-    isox0, isoy0 = rotation[0], rotation[1]
     
     isox1, isoy1 = getIsoCoordinates(app, x1, y0)
-    rotation = matrixMultiply(app.rotationMatrix, [[isox1], [isoy1]])
-    isox1, isoy1 = rotation[0], rotation[1]
-    
-    isox2, isoy2 = getIsoCoordinates(app, x1, y1)
-    rotation = matrixMultiply(app.rotationMatrix, [[isox2], [isoy2]])
-    isox2, isoy2 = rotation[0], rotation[1]
-    
-    isox3, isoy3 = getIsoCoordinates(app, x0, y1)
-    rotation = matrixMultiply(app.rotationMatrix, [[isox3], [isoy3]])
-    isox3, isoy3 = rotation[0], rotation[1]
 
+    isox2, isoy2 = getIsoCoordinates(app, x1, y1)
+      
+    isox3, isoy3 = getIsoCoordinates(app, x0, y1)
+    
     canvas.create_polygon(isox0, isoy0, isox1, isoy1,
                           isox2, isoy2, isox3, isoy3, 
                           fill = color, outline = '#a9edff')
 
-#gets the isometric coordinates by performing a system of equations
-#I actually did not adapt this from anywhere
-#I manually drew out a board and came up with my own formula
-#I have a page in my notebook where I did this for proof, if needed :)
+# adapted from: https://github.com/Josephbakulikira/3D-perspective-projection-with-python-/blob/master/main.py
 def getIsoCoordinates(app, x, y):
-    x_grid = app.width/2 + 1.25*(x - y)/3
-    y_grid = app.height/app.cols + 1.25*(x + y)/(app.cols/2)
-    return(x_grid, y_grid)
+    point = [[x], [y], [0]]
+    rotation_x = [[1, 0, 0],
+                  [0, math.cos(app.angle), -math.sin(app.angle)],
+                  [0, math.sin(app.angle), math.cos(app.angle)]]
+
+    rotation_y = [[math.cos(app.angle), 0, -math.sin(app.angle)],
+                  [0, 1, 0],
+                  [math.sin(app.angle), 0, math.cos(app.angle)]]
+
+    rotation_z = [[math.cos(app.angle), -math.sin(app.angle), 0],
+                  [math.sin(app.angle), math.cos(app.angle), 0],
+                  [0, 0 ,1]]
+
+    
+    rotated_2d = matrix_multiplication(rotation_y, point)
+    rotated_2d = matrix_multiplication(rotation_x, rotated_2d)
+    rotated_2d = matrix_multiplication(rotation_z, rotated_2d)
+    distance = 10
+    z = 1/(distance - rotated_2d[2][0])
+    projection_matrix = [[z, 0, 0],
+                        [0, z, 0]]
+    projected_2d = matrix_multiplication(projection_matrix, rotated_2d)
+
+    x = int(projected_2d[0][0] * 600) + app.center[0]
+    y = int(projected_2d[1][0] * 600) + app.center[1]
+    
+    return x, y       
 
 #does the reverse of getIsoCoordinates
 #i solved the system of equations and rewrote the new variable formulas
