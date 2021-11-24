@@ -4,6 +4,24 @@ import math
 from Enzyme import *
 from Mutation import *
 
+##########################################
+# CITATIONS
+
+# Matrix multiply method came from one of my previous homeworks
+# image citations:
+    # https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.chegg.com%2Fhomework-help%2F
+    # questions-and-answers%2Fconditions-illustrated-might-atp-synthase-operate-reverse-
+    # using-energy-atp-hydrolysis-pump-q46619862&psig=AOvVaw1XjrQ3E4hTBzwWkbTg1w-2&ust=
+    # 1637789636530000&source=images&cd=vfe&ved=0CAsQjRxqFwoTCJiMi_63r_QCFQAAAAAdAAAAABAE
+
+    # https://www.google.com/url?sa=i&url=https%3A%2F%2Fmicrobenotes.com%2Fdna-polymerase
+    # %2F&psig=AOvVaw1Rq5088FFLPW-qYsXIJSG7&ust=1637789747947000&source=images&cd=vfe&ved=
+    # 0CAsQjRxqFwoTCMi6_rK4r_QCFQAAAAAdAAAAABAD
+    
+    # https://www.google.com/url?sa=i&url=https%3A%2F%2Fflexbooks.ck12.org%2Fcbook%2Fck-12-
+    # biology-flexbook-2.0%2Fsection%2F1.17%2Fprimary%2Flesson%2Fenzymes-bio%2F&psig=AOvVaw0
+    # GeDJR1JxQEVYQeMrZkAUq&ust=1637789835326000&source=images&cd=vfe&ved=0CAsQjRxqFwoTCLDey
+    # ty4r_QCFQAAAAAdAAAAABAD
 
 ##########################################
 # Home Screen Mode
@@ -58,7 +76,7 @@ def gameMode_timerFired(app):
     app.currentTime += app.timerDelay
     
     checkWin(app, app.currentTime)
-    if app.winTime != None and app.winTime + 2000 == app.currentTime:        
+    if app.winTime != None:        
         app.mode = 'winMode'
     #update the sprite image
     app.spriteCounter = (1 + app.spriteCounter) % len(app.sprites)
@@ -66,17 +84,19 @@ def gameMode_timerFired(app):
     #update the mutation location after a certain interval
                
     for mutation in app.mutations:
-        if app.currentTime % 2000 == 100:
-            updateMutationLocation(app, mutation, mutation.row, mutation.col + 1)
         if mutation.hits <= 0:
+            app.board[mutation.row][mutation.col] = 0
+            app.mutations.remove(mutation)
             app.mutationsKilled += 1
+        if app.currentTime % app.mutationTime == 100:
+            updateMutationLocation(app, mutation, mutation.row, mutation.col + 1)
+        
     addNewMutation(app)
     #add an atp after a certain interval
     addNewATP(app)
     #update the atp location after each call to move it
     updateATPLocation(app)
-    
-    
+    shootAtMutation(app)
 
     
     #constantly checks if the enzymes have enough atp and changes availability if not
@@ -100,8 +120,10 @@ def gameMode_timerFired(app):
             #if caspase, then shoot a ball after a certain time
             if enzyme[0].name == "Caspase":
                 caspaseFunction(app, enzyme)
+            
+            if enzyme[0].name == "Star Shooter":
+                starShooterFunction(app)
                 
-    shootAtMutation(app)
 #function that takes care of what happens when mouse is pressed
 #checks if user is collecting atp or moving a card
 def gameMode_mousePressed(app, event):
@@ -227,7 +249,7 @@ class Enzyme(object):
         if name == "DNA Polymerase":  
             self.left = []
         
-        self.available = self.count > 0
+        self.available = True
         self.notEnoughATP = True
         self.x = 0
         self.y = 0
@@ -240,8 +262,8 @@ class Enzyme(object):
     
     #changes the availability of the enzyme group
     def changeAvailability(self):
-        self.count -= 1
-        self.available = self.count > 0
+        #self.count -= 1
+        self.available = True
         
     #updates the time for each enzyme on the board
     def updateTime(self):
@@ -296,7 +318,7 @@ def appStarted(app):
     app.atpImage = app.scaleImage(app.atpImage, 1/20)
     app.atpWidth, app.atpHeight = app.atpImage.size
     app.atp = []
-    app.collectedATP = 100
+    app.collectedATP = 50
     
     app.ballImage = app.loadImage('images/ball.png')
     app.ballImage = app.scaleImage(app.ballImage, 1/15)
@@ -317,23 +339,22 @@ def appStarted(app):
     
     #setting up starting enzyme configurations
     app.enzymes = []
-    app.enzymes.append(Enzyme(app, "ATP Synthase", 25, "images/atp synthase.png", len(app.enzymes), 3, 1/4))
-    app.enzymes.append(Enzyme(app, "Caspase", 50, "images/caspase.png", len(app.enzymes), 3, 1/7))
-    app.enzymes.append(Enzyme(app, "DNA Polymerase", 100, "images/dna polymerase.png", len(app.enzymes), 2, 1/3))
-    app.enzymes.append(["Shovel", 0, 0])
-    
+    app.gameEnzymes = [["ATP Synthase", 25, "images/atp synthase.png", 1/4], 
+                       ["DNA Polymerase", 50, "images/dna polymerase.png", 1/3], 
+                       ["Caspase", 100, "images/caspase.png", 1/7], 
+                       ["Star Shooter", 25, "images/atp synthase.png", 1/4]]
+    app.availableEnzymeCount = 0
+
+
     #setting the position for each card to go in the top bar when I draw it. 
-    for i in range(len(app.enzymes)):
-        enzyme = app.enzymes[i]
-        if isinstance(enzyme, Enzyme):
-            enzyme.setPosition(80 + i*app.cardWidth, 5 + 5)
-        else:
-            enzyme[1], enzyme[2] = 80 + i*app.cardWidth, 5 + 5
+    
         
     #setting up helper lists
     app.boardEnzymes = []
     app.mutations = []
     app.caspaseShoot = []
+    app.starShoot = []
+
     
     #setting up model configurations for the board 
     app.board = [([0] * app.cols) for row in range(app.rows)]
@@ -341,13 +362,13 @@ def appStarted(app):
     col = 0
     x, y = getCoordinates(app, row, col)
     app.mutations.append(Mutation(app, "Normal Mutation", app.url, 5, x, y, row, col))
-    app.setNumberMutations = 3
+    app.setNumberMutations = 0
     app.mutationsPassed = 1
     app.mutationsKilled = 0
+    app.mutationTime = 0
     app.progress = 0
     app.hits = 0
-    app.hitsPerMutation = 5
-    app.totalHits = app.setNumberMutations*app.hitsPerMutation
+    app.hitsPerMutation = 0
     app.winTime = None
 
     
@@ -360,11 +381,44 @@ def appStarted(app):
     #setting up message box configurations
     app.messageBoxWidth = 200
     app.messageBoxHeight = 300
+    
+    generateConfigs(app)
+    
+    app.totalHits = app.setNumberMutations*app.hitsPerMutation
+
+    
+    for i in range(len(app.enzymes)):
+        enzyme = app.enzymes[i]
+        if isinstance(enzyme, Enzyme):
+            enzyme.setPosition(80 + i*app.cardWidth, 5 + 5)
+        else:
+            enzyme[1], enzyme[2] = 80 + i*app.cardWidth, 5 + 5
+    
+def generateConfigs(app):
+    randomSeed = random.seed(app.level)
+    app.setNumberMutations = app.level
+    if app.level < 10:
+        app.hitsPerMutation = 5
+    else:
+        app.hitsPerMutation = random.randint(app.level//4, app.level//2, randomSeed)
+    app.mutationTime = mutationTimeFunction(app.level)
+    if app.level <= 1:
+        app.availableEnzymeCount = 3
+    elif app.level <= 2:
+        app.availableEnzymeCount = 4
+    
+    for i in range(app.availableEnzymeCount):
+        app.enzymes.append(Enzyme(app, app.gameEnzymes[i][0], app.gameEnzymes[i][1], app.gameEnzymes[i][2], len(app.enzymes), 3, app.gameEnzymes[i][3]))
+    app.enzymes.append(["Shovel", 0, 0])
+
+
+def mutationTimeFunction(x):
+    return (0.5)**(x - 10) * 800
 
 def resetConfigs(app):
     app.currentTime = 0
     app.atp = []
-    app.collectedATP = 100
+    app.collectedATP = 50
     app.rotationMatrix = [[math.cos(0), - math.sin(0)],
                         [math.sin(0),   math.cos(0)]]
     app.progress = 0
@@ -407,6 +461,18 @@ def resetConfigs(app):
     app.enzymeX = 0
     app.enzymeY = 0
     app.enzyme = None
+    
+    generateConfigs(app)
+    
+    app.totalHits = app.setNumberMutations*app.hitsPerMutation
+
+    
+    for i in range(len(app.enzymes)):
+        enzyme = app.enzymes[i]
+        if isinstance(enzyme, Enzyme):
+            enzyme.setPosition(80 + i*app.cardWidth, 5 + 5)
+        else:
+            enzyme[1], enzyme[2] = 80 + i*app.cardWidth, 5 + 5
 
 def appStopped(app):
     print(app.board)
@@ -419,22 +485,12 @@ def getSprites(app, strip):
         sprites.append(sprite)
     return sprites
 
-def generateLevel(app):
-    #things to generate:
-    #which enzymes allowed to use
-    #how many mutations are there in the level
-    #how often do mutations arrive 
-    pass
-
 def getCoordinates(app, row, col):
     x0 = row*app.tileWidth
     y0 = col*app.tileWidth
     x1 = (row + 1)*app.tileWidth
     y1 = (col + 1)*app.tileHeight
     x, y = getIsoCoordinates(app, (x0+x1)/2, (y0+y1)/2) 
-    point = [[x], [y]]
-    point = matrixMultiply(app.rotationMatrix, point)
-    x, y = point[0][0], point[1][0]
     
     return (x, y)
 
@@ -448,11 +504,24 @@ def updateBoard(app, event):
 
     if app.board[row][col] == 0:
     #adds a new enzyme to the board since mouse was released
+        enzymeRow, enzymeCol = getRowCol(app, event.x, event.y)
+        x, y = getCoordinates(app, enzymeRow, enzymeCol)
         app.boardEnzymes.append([app.enzyme, event.x, event.y])
         
         #if the enzyme added was caspase, then start shooting
         if isinstance(app.enzyme, Enzyme) and app.enzyme.name == "Caspase":
-            app.caspaseShoot.append((event.x, event.y))              
+            x0 = row*app.tileWidth
+            y0 = col*app.tileWidth
+            x1 = (row + 1)*app.tileWidth
+            y1 = (col + 1)*app.tileHeight
+            app.caspaseShoot.append(((x0+x1)/2, (y0+y1)/2 - 20))      
+        
+        if isinstance(app.enzyme, Enzyme) and app.enzyme.name == "Star Shoot":
+            x0 = row*app.tileWidth
+            y0 = col*app.tileWidth
+            x1 = (row + 1)*app.tileWidth
+            y1 = (col + 1)*app.tileHeight
+            app.starShoot = [((x0+x1)/2, (y0+y1)/2)] * 4      
 
         #if the enzyme was the shovel, then remove whatever enzyme was there by replacing with 0
         if not isinstance(app.enzyme, Enzyme):
@@ -537,9 +606,9 @@ def matrixMultiply(m1,m2):
 #changing previous location to 0 and next location to 1
 #doesn't move if dna polymerase is there
 def addNewMutation(app):
-    randomTime = random.randrange(0, 1000, 100)
-    if app.currentTime % 1000 == randomTime:
-        if app.mutationsPassed < app.setNumberMutations:
+    if app.mutationsPassed < app.setNumberMutations:
+        randomTime = random.randrange(0, 1000, 100)
+        if app.currentTime % 1000 == randomTime:
             row = random.randint(0, app.cols - 1)
             col = 0
             x, y = getCoordinates(app, row, col)
@@ -567,17 +636,49 @@ def dnaPolyFunction(app, enzyme):
         elif enzyme[0].left[i] <= 20:
             enzyme[0].setImage(app, i, 'images/dna polymerase broken.png')
 
-def caspaseFunction(app, enzyme):
+def caspaseFunction(app, enzyme):    
+    print(enzyme[0].times)
     for i in range(len(enzyme[0].times)):
+        x, y = getCartesianCoordinates(app, enzyme[0].locations[i][0], enzyme[0].locations[i][1])
         time = enzyme[0].times[i]
-        if time % 1500 == 0:
-            app.caspaseShoot.append(enzyme[0].locations[i])
+        if time % 3000 == 0:
+            app.caspaseShoot.append((x, y))
+
+
+def starShooterFunction(app):
+    directions = [(0, -1), (0, +1), (-1, 0), (+1, 0)]
+    if len(app.starShoot) > 0:
+        for i in range(4):
+            print(i)
+            app.starShoot[i] = (app.starShoot[i][0] + 20*directions[i][0], app.starShoot[i][1] - 20*directions[i][1])
+
+    
+# def starShooterFunction(app, row, col):
+#     app.starShoot = [0, 0, 0, 0]
+#     directions = [(0, -1), (0, +1), (-1, 0), (+1, 0)]
+#     i = 0
+#     while i < (len(app.starShoot)):
+#         drow, dcol = directions[i][0], directions[i][1]
+#         x, y = getCartesianCoordinates(app, app.starShoot[i][0], app.starShoot[i][1])
+#         drow, dcol = 
+        
+        
+#         if abs(row + drow) == 1 or abs(col + dcol) == 1:
+#             for mutation in app.mutations:
+#                 if isinstance(app.board[row][col], Mutation):
+#                     mutation.getHit()
+#                     app.hits += 1
+#                     app.progress = int(100*app.hits/app.totalHits)
+#             app.starShoot.pop(i)
+#         else:
+#             app.starShoot[i] = (app.starShoot[i][0] + 20*drow, app.starShoot[i][1] - 20*dcol)
+#             i += 1
 
 def shootAtMutation(app):
     i = 0
     while i < (len(app.caspaseShoot)):
         if app.caspaseShoot[i][0] <= app.width and app.caspaseShoot[i][1] >= 0:
-            app.caspaseShoot[i] = (app.caspaseShoot[i][0] + 55/3, app.caspaseShoot[i][1] - 37/3)
+            app.caspaseShoot[i] = (app.caspaseShoot[i][0], app.caspaseShoot[i][1] - 20)
             i += 1
         else:
             app.caspaseShoot.pop(i)
@@ -640,8 +741,9 @@ def checkWin(app, currentTime):
 
 def checkCaspaseCollision(app, caspaseX, caspaseY, mutation):
     (width, height) = mutation.image.size
-    return ((mutation.x - width//2 <= caspaseX <= mutation.x + width//2) and 
-        (mutation.y + height//2 >= caspaseY >= mutation.y - height//2))
+    x, y = getIsoCoordinates(app, caspaseX, caspaseY)
+    return ((mutation.x - width//4 <= x <= mutation.x + width//4) and 
+        (mutation.y + height//4 >= y >= mutation.y - height//4))
 
 
 #big function for drawing the main board
@@ -701,7 +803,11 @@ def drawCollectedATP(app, canvas):
 #draws the ball for caspase's shots
 def drawShots(app, canvas):
     for ball in app.caspaseShoot:
-        canvas.create_image(ball[0], ball[1], image=ImageTk.PhotoImage(app.ballImage))
+        x, y = getIsoCoordinates(app, ball[0], ball[1])
+        canvas.create_image(x, y, image=ImageTk.PhotoImage(app.ballImage))
+    for starBall in app.starShoot:
+        x, y = getIsoCoordinates(app, starBall[0], starBall[1])
+        canvas.create_image(x, y, image=ImageTk.PhotoImage(app.ballImage))
 
 #draws the main message box for text input (placeholder for now)
 def drawMessageBox(app, canvas):
