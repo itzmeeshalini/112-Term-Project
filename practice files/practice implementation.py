@@ -183,8 +183,8 @@ def calculateIso(app, isox0, isoy0, isox2, isoy2):
     app.isoHeight = isoy2 - isoy0
 
 def getIsoCoordinates(app, x, y):
-    x_grid = app.width/2 + app.isoTileWidth*(x - y)/app.totalWidth
-    y_grid = app.height/2 + app.isoTileWidth*(x + y)/app.totalHeight
+    x_grid = app.width/2 + 1*(x - y)/app.totalWidth
+    y_grid = app.height/2 + 1*(x + y)/app.totalHeight
     
     stretching = matrixMultiply(app.transformation, [[x], [y]])
     x_grid, y_grid = stretching[0][0] + app.width/2, stretching[1][0] + app.height/2

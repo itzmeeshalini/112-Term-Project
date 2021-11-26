@@ -536,9 +536,12 @@ def distance(x0, y0, x1, y1):
 
 def getAngle(app, event):
     cx = app.width/2
+    cy = app.height/2
     leg1 = cx - event.x
-    
-    return leg1
+    leg2 = cy - event.y
+    hypo = distance(cx, cy, event.x, event.y)
+    angle = math.sin(leg1/hypo)
+    return angle
 
 #updates the model of the board
 def updateBoard(app, event):
@@ -903,28 +906,31 @@ def placeTile(app, x0, y0, x1, y1, canvas, color):
 #                   [0, 0 ,1]]
 
     
-#     #rotated_2d = matrix_multiplication(rotation_y, point)
-#     #rotated_2d = matrix_multiplication(rotation_x, point)
+#     rotated_2d = matrix_multiplication(rotation_y, point)
+#     #rotated_2d = matrix_multiplication(rotation_x, rotated_2d)
 #     #rotated_2d = matrix_multiplication(rotation_z, rotated_2d)
     
-#     rotated_2d = matrix_multiplication(rotation_z, point)
 
     
-#     distance = 10
-#     z = 1/(distance - rotated_2d[2][0])
-#     projection_matrix = [[z, 0, 0],
-#                         [0, z, 0]]
-#     projected_2d = matrix_multiplication(projection_matrix, rotated_2d)
+#     #distance = 10
+#     #z = 1/(distance - rotated_2d[2][0])
+#     #projection_matrix = [[z, 0, 0],
+#                         #[0, z, 0]]
+#     #projected_2d = matrix_multiplication(projection_matrix, rotated_2d)
 
-#     x = int(projected_2d[0][0] * 600) + app.center[0]
-#     y = int(projected_2d[1][0] * 600) + app.center[1]
+#     x = int(rotated_2d[0][0] * 60) + app.center[0]
+#     y = int(rotated_2d[1][0] * 60) + app.center[1]
     
 #     return x, y     
 
 def getIsoCoordinates(app, x, y):
-    x_grid = (app.width/2 - app.angle) + 1.25*(x - y)/3
-    y_grid = app.height/app.cols + 1.25*(x + y)/(app.cols/2)
-    return(x_grid, y_grid)  
+    x_grid = (x)
+    y_grid = (x + y)/2
+    
+    x_grid = x_grid*60 + app.center[0]
+    y_grid = y_grid*60 + app.center[1]
+    return(x_grid, y_grid)
+  
 #%%
 def undoIsoCoordinates(app, x_iso, y_iso):
     x = x_iso / 600 - app.center[0]

@@ -76,13 +76,16 @@ def gameMode_timerFired(app):
     app.currentTime += app.timerDelay
     
     checkWin(app, app.currentTime)
+    checkLose(app)
+    
     if app.winTime != None:        
         app.mode = 'winMode'
     #update the sprite image
     app.spriteCounter = (1 + app.spriteCounter) % len(app.sprites)
     
     #update the mutation location after a certain interval
-               
+    
+    
     for mutation in app.mutations:
         if mutation.hits <= 0:
             app.board[mutation.row][mutation.col] = 0
@@ -188,6 +191,7 @@ def gameMode_mouseReleased(app, event):
     #if it's the shovel, then only change dragCard and update the board
     elif app.dragCard == True and app.enzyme != None and app.enzyme[0] == "Shovel" and app.enzymeY > 200:
         app.dragCard = False
+        print("need to use shovel")
         updateBoard(app, event)
 
 #different key options for moving the mutation (helping when testing)
@@ -365,7 +369,6 @@ def appStarted(app):
     app.setNumberMutations = 0
     app.mutationsPassed = 1
     app.mutationsKilled = 0
-    app.mutationTime = 0
     app.progress = 0
     app.hits = 0
     app.hitsPerMutation = 0
@@ -385,6 +388,7 @@ def appStarted(app):
     generateConfigs(app)
     
     app.totalHits = app.setNumberMutations*app.hitsPerMutation
+    app.mutationTime = 2000
 
     
     for i in range(len(app.enzymes)):
@@ -402,10 +406,11 @@ def generateConfigs(app):
     else:
         app.hitsPerMutation = random.randint(app.level//4, app.level//2, randomSeed)
     app.mutationTime = mutationTimeFunction(app.level)
-    if app.level <= 1:
-        app.availableEnzymeCount = 3
-    elif app.level <= 2:
-        app.availableEnzymeCount = 4
+    #if app.level <= 1:
+        #app.availableEnzymeCount = 4
+    #elif app.level <= 2:
+        #app.availableEnzymeCount = 4
+    app.availableEnzymeCount = 4
     
     for i in range(app.availableEnzymeCount):
         app.enzymes.append(Enzyme(app, app.gameEnzymes[i][0], app.gameEnzymes[i][1], app.gameEnzymes[i][2], len(app.enzymes), 3, app.gameEnzymes[i][3]))
@@ -422,12 +427,7 @@ def resetConfigs(app):
     app.rotationMatrix = [[math.cos(0), - math.sin(0)],
                         [math.sin(0),   math.cos(0)]]
     app.progress = 0
-
     app.enzymes = []
-    app.enzymes.append(Enzyme(app, "ATP Synthase", 25, "images/atp synthase.png", len(app.enzymes), 3, 1/4))
-    app.enzymes.append(Enzyme(app, "Caspase", 50, "images/caspase.png", len(app.enzymes), 3, 1/7))
-    app.enzymes.append(Enzyme(app, "DNA Polymerase", 100, "images/dna polymerase.png", len(app.enzymes), 2, 1/3))
-    app.enzymes.append(["Shovel", 0, 0])
 
     for i in range(len(app.enzymes)):
         enzyme = app.enzymes[i]
@@ -501,8 +501,13 @@ def updateBoard(app, event):
     
     #gets the row and column of the location
     row, col = getRowCol(app, x, y)
+    
+    if not isinstance(app.enzyme, Enzyme):
+            print("need to remove enzyme")
+            removeEnzymeFromBoard(app, app.board[row][col], 0)
+            app.board[row][col] = 0
 
-    if app.board[row][col] == 0:
+    elif app.board[row][col] == 0:
     #adds a new enzyme to the board since mouse was released
         enzymeRow, enzymeCol = getRowCol(app, event.x, event.y)
         x, y = getCoordinates(app, enzymeRow, enzymeCol)
@@ -516,17 +521,13 @@ def updateBoard(app, event):
             y1 = (col + 1)*app.tileHeight
             app.caspaseShoot.append(((x0+x1)/2, (y0+y1)/2 - 20))      
         
-        if isinstance(app.enzyme, Enzyme) and app.enzyme.name == "Star Shoot":
+        if isinstance(app.enzyme, Enzyme) and app.enzyme.name == "Star Shooter":
             x0 = row*app.tileWidth
             y0 = col*app.tileWidth
             x1 = (row + 1)*app.tileWidth
             y1 = (col + 1)*app.tileHeight
-            app.starShoot = [((x0+x1)/2, (y0+y1)/2)] * 4      
-
-        #if the enzyme was the shovel, then remove whatever enzyme was there by replacing with 0
-        if not isinstance(app.enzyme, Enzyme):
-            removeEnzymeFromBoard(app, app.board[row][col], 0)
-            app.board[row][col] = 0
+            app.starShoot = [((x0+x1)/2, (y0+y1)/2)] * 8
+            print(app.starShoot)              
         
         #else, add the enzyme to the board, and update the enzyme group's locations and times
         else:  
@@ -637,7 +638,6 @@ def dnaPolyFunction(app, enzyme):
             enzyme[0].setImage(app, i, 'images/dna polymerase broken.png')
 
 def caspaseFunction(app, enzyme):    
-    print(enzyme[0].times)
     for i in range(len(enzyme[0].times)):
         x, y = getCartesianCoordinates(app, enzyme[0].locations[i][0], enzyme[0].locations[i][1])
         time = enzyme[0].times[i]
@@ -646,34 +646,12 @@ def caspaseFunction(app, enzyme):
 
 
 def starShooterFunction(app):
-    directions = [(0, -1), (0, +1), (-1, 0), (+1, 0)]
+    directions = [(0, -1), (0, +1), (-1, 0), (+1, 0), (+1, -1), (+1, +1), (-1, -1), (-1, +1)]
     if len(app.starShoot) > 0:
-        for i in range(4):
-            print(i)
+        for i in range(len(app.starShoot)):
             app.starShoot[i] = (app.starShoot[i][0] + 20*directions[i][0], app.starShoot[i][1] - 20*directions[i][1])
-
-    
-# def starShooterFunction(app, row, col):
-#     app.starShoot = [0, 0, 0, 0]
-#     directions = [(0, -1), (0, +1), (-1, 0), (+1, 0)]
-#     i = 0
-#     while i < (len(app.starShoot)):
-#         drow, dcol = directions[i][0], directions[i][1]
-#         x, y = getCartesianCoordinates(app, app.starShoot[i][0], app.starShoot[i][1])
-#         drow, dcol = 
-        
-        
-#         if abs(row + drow) == 1 or abs(col + dcol) == 1:
-#             for mutation in app.mutations:
-#                 if isinstance(app.board[row][col], Mutation):
-#                     mutation.getHit()
-#                     app.hits += 1
-#                     app.progress = int(100*app.hits/app.totalHits)
-#             app.starShoot.pop(i)
-#         else:
-#             app.starShoot[i] = (app.starShoot[i][0] + 20*drow, app.starShoot[i][1] - 20*dcol)
-#             i += 1
-
+            # just know that this way, if one collides, then the other ones will switch direction...
+                
 def shootAtMutation(app):
     i = 0
     while i < (len(app.caspaseShoot)):
@@ -682,7 +660,15 @@ def shootAtMutation(app):
             i += 1
         else:
             app.caspaseShoot.pop(i)
+
+    # i = 0
+    # while i < (len(app.starShoot)):
+    #     if 0 <= app.starShoot[i][0] <= app.width and 0 <= app.starShoot[i][1] <= app.height:
+    #         i += 1
+    #     else:
+    #         app.starShoot.pop(i)
             
+    removeMutations = []
     for mutation in app.mutations:
         i = 0
         while i < (len(app.caspaseShoot)):
@@ -691,10 +677,24 @@ def shootAtMutation(app):
                 app.caspaseShoot.pop(i)
                 #print("mutation was hit!!")
                 mutation.getHit()
+                app.hits += 1 
+                app.progress = int(100*app.hits/app.totalHits)
+            else:
+                i += 1
+        
+        i = 0
+        while i < (len(app.starShoot)):
+            if checkCaspaseCollision(app, app.starShoot[i][0], app.starShoot[i][1], 
+                                    mutation):
+                app.starShoot.pop(i)
+                #print("mutation was hit!!")
+                mutation.getHit()
                 app.hits += 1
                 app.progress = int(100*app.hits/app.totalHits)
             else:
                 i += 1
+    for mutation in removeMutations:
+        app.mutations.remove(mutation)
         
             
 #update the atp location after each call to move it
@@ -718,7 +718,6 @@ def addNewATP(app):
 
 def updateMutationLocation(app, mutation, currentX, currentY):
     #print("updating!", app.board)
-    
     if mutation.col < (app.cols - 1):
         if mutation.hits <= 0:
             app.board[mutation.row][mutation.col] = 0
@@ -738,6 +737,11 @@ def checkWin(app, currentTime):
     if app.winTime == None:
         if app.setNumberMutations == app.mutationsKilled:
             app.winTime = currentTime
+
+def checkLose(app):
+    for tile in range(len(app.board[-1])):
+        if isinstance(app.board[-1][tile], Mutation):
+            app.mode = 'loseMode'
 
 def checkCaspaseCollision(app, caspaseX, caspaseY, mutation):
     (width, height) = mutation.image.size
