@@ -3,6 +3,7 @@ import random
 import math
 from Enzyme import *
 from Mutation import *
+import ast
 
 ##########################################
 # CITATIONS
@@ -32,9 +33,112 @@ from Mutation import *
 def homeScreenMode_redrawAll(app, canvas):
     font = 'Sans 26'
     canvas.create_text(app.width/2, 150, text='Play Enzymes vs. Mutations!', font=font)
+    drawButtons(app, canvas)
 
 def homeScreenMode_keyPressed(app, event):
     app.mode = 'gameMode'
+
+def homeScreenMode_mousePressed(app, event):
+    cx, cy = app.width//2, app.height//2
+    if ((cx - app.margin - app.buttonWidth <= event.x <= cx - app.margin) and 
+        (cy + 20 <= event.y <= cy + 20 + app.buttonHeight//2)):
+        app.mode = 'loginMode'
+    elif ((cx + app.margin <= event.x <= cx + app.margin + app.buttonWidth) and 
+        (cy + 20 <= event.y <= cy + 20 + app.buttonHeight//2)):
+        app.mode = 'signupMode'
+        
+def drawButtons(app, canvas):
+    cx, cy = app.width//2, app.height//2
+    canvas.create_rectangle(cx - app.margin - app.buttonWidth, cy + 20, cx - app.margin, cy + 20 + app.buttonHeight)
+    canvas.create_text(cx - app.margin - app.buttonWidth//2, cy + 20 + app.buttonHeight//2, 
+                       text = "Returning Player", font = 'Sans 14', anchor = 'center')
+    canvas.create_rectangle(cx + app.margin, cy + 20, cx + app.margin + app.buttonWidth, cy + 20 + app.buttonHeight)
+    canvas.create_text(cx + app.margin + app.buttonWidth//2, cy + 20 + app.buttonHeight//2, 
+                       text = "New Player", font = 'Sans 14', anchor = 'center')
+        
+##########################################
+# Login Screen
+##########################################
+
+def loginMode_redrawAll(app, canvas):
+    font = 'Sans 26'
+    canvas.create_text(app.width/2, 150, text='Login Mode!', font=font)
+
+def loginMode_mousePressed(app, event):
+    username = app.getUserInput('Username')
+    if (username == None):
+        app.mode = 'homeScreenMode'
+    while username not in app.loginsDict:
+        app.showMessage("That username does not exist")
+        username = app.getUserInput('Username')
+        if (username == None):
+            app.mode = 'homeScreenMode'
+            break
+    else:
+        password = app.getUserInput('Password')
+        if (password == None):
+            app.mode = 'homeScreenMode'
+        while(password != app.loginsDict[username][0]):
+            app.showMessage("You entered the wrong password")
+            password = app.getUserInput('Incorrect password. Enter it again.')
+            if (password == None):
+                app.mode = 'homeScreenMode'
+                break
+        app.mode = 'playerMode'
+        app.user = username
+        app.level = app.loginsDict[app.user][1]
+        print(app.level)
+
+
+    
+##########################################
+# Sign Up Screen
+##########################################
+
+def signupMode_redrawAll(app, canvas):
+    font = 'Sans 26'
+    canvas.create_text(app.width/2, 150, text='Sign Up Mode!', font=font)
+    
+def signupMode_mousePressed(app, event):
+    username = app.getUserInput('Enter a username')
+    if (username == None):
+        app.mode = 'homeScreenMode'
+    while username in app.loginsDict:
+        username = app.getUserInput('That username already exists. Enter another username')
+    password1 = app.getUserInput('Enter a strong password')
+    if (password1 == None):
+        app.mode = 'homeScreenMode'
+    password2 = app.getUserInput('Enter your password again')
+    if (password2 == None):
+        app.mode = 'homeScreenMode'
+    while (password2 != password1):
+        password2 = app.getUserInput('The passwords did not match. Enter it again.')
+        
+    level = 1
+    app.loginsDict[username] = [password2, level]
+
+    f = open("logins.txt","w")
+    f.write( str(app.loginsDict) )
+    f.close()
+    
+    app.user = username
+    app.mode = 'playerMode'
+    app.level = app.loginsDict[app.user][1]
+    print(app.level)
+    
+##########################################
+# Player Screen
+##########################################
+
+def playerMode_redrawAll(app, canvas):
+    font = 'Sans 26'
+    canvas.create_text(app.width/2, 150, text=f'Hello {app.user}!', font=font)
+    canvas.create_text(app.width/2, 175, text=f'You are on level {app.level}!', font=font)
+    canvas.create_text(app.width/2, 200, text='Press a key to play!', font=font)
+
+def playerMode_keyPressed(app, event):
+    app.mode = 'gameMode'
+
 
 ##########################################
 # Win Screen
@@ -49,6 +153,10 @@ def winMode_keyPressed(app, event):
     app.mode = 'gameMode'
     app.mutationsKilled = 0
     app.level += 1
+    app.loginsDict[app.user][1] = app.level
+    f = open("logins.txt","w")
+    f.write( str(app.loginsDict) )
+    f.close()
     resetConfigs(app)
     
 ##########################################
@@ -134,6 +242,8 @@ def gameMode_timerFired(app):
 #function that takes care of what happens when mouse is pressed
 #checks if user is collecting atp or moving a card
 def gameMode_mousePressed(app, event):
+    
+    checkLogOutButton(app, event)
     
     index = checkMouseInCard(app, event)
     #print(index, type(app.enzyme))
@@ -240,6 +350,7 @@ def gameMode_redrawAll(app, canvas):
     drawTopBar(app, canvas)
     drawShots(app, canvas)
     drawMessageBox(app, canvas)
+    drawLogOutButton(app, canvas)
     #only draws the card on the board if the user is dragging the card
     if app.dragCard:
         drawenzymeCard(app.enzyme, app, canvas, app.enzymeX, app.enzymeY)
@@ -310,6 +421,18 @@ class Mutation(object):
 
 #sets up all the initial helper variables
 def appStarted(app):
+    app.loginsDict = dict()
+    getLogins(app)
+    print(app.loginsDict)
+
+    
+    app.user = ""
+    app.level = 1
+    
+    app.buttonWidth = app.width//6
+    app.buttonHeight = app.height//20
+    app.margin = 20
+    app.starShootRowCol = (0, 0)
     app.angle = -1.5
     x_angle = -math.pi/50
 
@@ -331,7 +454,6 @@ def appStarted(app):
     
     
     app.mode = 'homeScreenMode'
-    app.level = 1
     #setLevelConfig(app, app.level)
     #setting up board configurations
     app.rows = 9
@@ -431,6 +553,14 @@ def appStarted(app):
         else:
             enzyme[1], enzyme[2] = 80 + i*app.cardWidth, 5 + 5
     
+def getLogins(app):
+    file = open("logins.txt", "r")
+
+    contents = file.read()
+    app.loginsDict = ast.literal_eval(contents)
+
+    file.close()
+
 def generateConfigs(app):
     randomSeed = random.seed(app.level)
     app.setNumberMutations = app.level
@@ -475,8 +605,8 @@ def resetConfigs(app):
 
     #setting up model configurations for the board 
     app.board = [([0] * app.cols) for row in range(app.rows)]
-    row = random.randint(0, app.cols - 1)
-    col = 0
+    row = 8
+    col = random.randint(0, app.cols - 1)
     x, y = getCoordinates(app, row, col)
     app.mutations.append(Mutation(app, "Normal Mutation", app.url, app.hitsPerMutation, x, y, row, col))
     app.setNumberMutations = app.level
@@ -506,9 +636,7 @@ def resetConfigs(app):
             enzyme.setPosition(80 + i*app.cardWidth, 5 + 5)
         else:
             enzyme[1], enzyme[2] = 80 + i*app.cardWidth, 5 + 5
-
-def appStopped(app):
-    print(app.board)
+    
 
 #crops the sprite sheet
 def getSprites(app, strip):
@@ -539,8 +667,10 @@ def find_row_col(app, x, y):
             isox3, isoy3 = getIsoCoordinates(app, x1, y1) 
             isox4, isoy4 = getIsoCoordinates(app, x0, y1)
             
-            if ((isox2 <= x <= isox3 and isoy2 <= y <= isoy4) or
-                (isox1 <= x <= isox4 and isoy3 <= y <= isoy1)):
+            maxX, minX, maxY, minY = findXYBounds(isox1, isoy1, isox2, isoy2, isox3, isoy3, isox4, isoy4)
+
+            
+            if (minX <= x <= maxX and minY <= y <= maxY):
                 #print(row, col)
                 return row, col
     return -1, -1
@@ -599,7 +729,7 @@ def updateBoard(app, event):
                 y1 = (col + 1)
                 x, y = getIsoCoordinates(app, (x0+x1)/2, (y0+y1)/2)
                 app.starShoot = [(x, y)] * 8
-                print(app.starShoot)  
+                app.starShootRowCol = (x0+x1)/2, (y0+y1)/2
                 app.board[row][col] = app.enzyme            
         
         #else, add the enzyme to the board, and update the enzyme group's locations and times
@@ -711,12 +841,20 @@ def caspaseFunction(app, enzyme):
         if app.currentTime % 3000 == 0:
             app.caspaseShoot.append((x, y))
 
+def getSlope(app, row, col):
+    x0, y0 = 7.5, col + 0.5
+    x1, y1 = row - 0.5, col + 0.5
+    
+    dx, dy = (y1 - y0), (x1 - x0)
+    return dx, dy
 
 def starShooterFunction(app):
+
     directions = [(0, -1), (0, +1), (-1, 0), (+1, 0), (+1, -1), (+1, +1), (-1, -1), (-1, +1)]
     if len(app.starShoot) > 0:
         for i in range(len(app.starShoot)):
-            app.starShoot[i] = (app.starShoot[i][0] + 20*directions[i][0], app.starShoot[i][1] - 20*directions[i][1])
+            dx, dy = getSlope(app, app.starShootRowCol[0], app.starShootRowCol[1])
+            app.starShoot[i] = (app.starShoot[i][0] + dx*10*directions[i][0], app.starShoot[i][1] - dy*10*directions[i][1])
             # just know that this way, if one collides, then the other ones will switch direction...
                 
 def shootAtMutation(app):
@@ -814,8 +952,9 @@ def checkLose(app):
 def checkCaspaseCollision(app, caspaseX, caspaseY, mutation):
     (width, height) = mutation.image.size
     x, y = caspaseX, caspaseY
-    return ((mutation.x - width//4 <= x <= mutation.x + width//4) and 
-        (mutation.y + height//4 >= y >= mutation.y - height//4))
+    mx, my = getIsoCoordinates(app, mutation.row, mutation.col)
+    return ((mx - width//4 <= x <= mx + width//4) and 
+        (my + height//4 >= y >= my - height//4))
 
 
 #big function for drawing the main board
@@ -954,6 +1093,16 @@ def drawenzymeCard(enzyme, app, canvas, x, y):
 #uses isometric function to calculate isometric coordinates
 #rotates the tile if needed
 #creates a polygon with these 4 points 
+
+def checkLogOutButton(app, event):
+    if ((app.width - 70 <= event.x <= app.width - 5) and 
+        (app.height - 30 <= event.y <= app.height - 5)):
+        app.mode = 'homeScreenMode'
+
+def drawLogOutButton(app, canvas):
+    round_rectangle(canvas, app.width - 70, app.height - 30, app.width - 5, app.height - 5, fill = '#69C6AF')
+    canvas.create_text(app.width - 38, app.height - 18, text = "Log Out", anchor = 'center', fill = 'black')
+
 def placeTile(app, x0, y0, x1, y1, canvas, color):
 
     isox0, isoy0 = getIsoCoordinates(app, x0, y0)
@@ -967,6 +1116,16 @@ def placeTile(app, x0, y0, x1, y1, canvas, color):
     canvas.create_polygon(isox0, isoy0, isox1, isoy1,
                           isox2, isoy2, isox3, isoy3, 
                           fill = color, outline = '#a9edff')
+
+def findXYBounds(isox0, isoy0, isox1, isoy1, isox2, isoy2, isox3, isoy3):
+    maxX = max([isox0, isox1, isox2, isox3])
+    minX = min([isox0, isox1, isox2, isox3])
+    maxY = max([isoy0, isoy1, isoy2, isoy3])
+    minY = min([isoy0, isoy1, isoy2, isoy3])
+    
+    return maxX, minX, maxY, minY
+
+
 
 #gets the isometric coordinates by performing a system of equations
 #I actually did not adapt this from anywhere
