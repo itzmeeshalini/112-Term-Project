@@ -87,7 +87,6 @@ def loginMode_mousePressed(app, event):
         app.mode = 'playerMode'
         app.user = username
         app.level = app.loginsDict[app.user][1]
-        print(app.level)
 
 
     
@@ -103,28 +102,37 @@ def signupMode_mousePressed(app, event):
     username = app.getUserInput('Enter a username')
     if (username == None):
         app.mode = 'homeScreenMode'
-    while username in app.loginsDict:
-        username = app.getUserInput('That username already exists. Enter another username')
-    password1 = app.getUserInput('Enter a strong password')
-    if (password1 == None):
-        app.mode = 'homeScreenMode'
-    password2 = app.getUserInput('Enter your password again')
-    if (password2 == None):
-        app.mode = 'homeScreenMode'
-    while (password2 != password1):
-        password2 = app.getUserInput('The passwords did not match. Enter it again.')
-        
-    level = 1
-    app.loginsDict[username] = [password2, level]
-
-    f = open("logins.txt","w")
-    f.write( str(app.loginsDict) )
-    f.close()
     
-    app.user = username
-    app.mode = 'playerMode'
-    app.level = app.loginsDict[app.user][1]
-    print(app.level)
+    else:
+        while username in app.loginsDict:
+            username = app.getUserInput('That username already exists. Enter another username')
+            if (username == None):
+                app.mode = 'homeScreenMode'
+                break
+        password1 = app.getUserInput('Enter a strong password')
+        if (password1 == None):
+            app.mode = 'homeScreenMode'
+        else:
+            password2 = app.getUserInput('Enter your password again')
+            if (password2 == None):
+                app.mode = 'homeScreenMode'
+            else:
+                while (password2 != password1):
+                    password2 = app.getUserInput('The passwords did not match. Enter it again.')
+                    if (password2 == None):
+                        app.mode = 'homeScreenMode'
+                        break
+                    else:
+                        level = 1
+                        app.loginsDict[username] = [password2, level]
+
+                        f = open("logins.txt","w")
+                        f.write( str(app.loginsDict) )
+                        f.close()
+                        
+                        app.user = username
+                        app.mode = 'playerMode'
+                        app.level = app.loginsDict[app.user][1]
     
 ##########################################
 # Player Screen
@@ -197,6 +205,8 @@ def gameMode_timerFired(app):
     
     #update the mutation location after a certain interval
     
+    shootAtMutation(app)
+
     
     for mutation in app.mutations:
         if mutation.hits <= 0:
@@ -211,7 +221,6 @@ def gameMode_timerFired(app):
     addNewATP(app)
     #update the atp location after each call to move it
     updateATPLocation(app)
-    shootAtMutation(app)
 
     
     #constantly checks if the enzymes have enough atp and changes availability if not
@@ -423,8 +432,6 @@ class Mutation(object):
 def appStarted(app):
     app.loginsDict = dict()
     getLogins(app)
-    print(app.loginsDict)
-
     
     app.user = ""
     app.level = 1
@@ -433,6 +440,8 @@ def appStarted(app):
     app.buttonHeight = app.height//20
     app.margin = 20
     app.starShootRowCol = (0, 0)
+    app.caspaseShootRowCol = (0, 0)
+
     app.angle = -1.5
     x_angle = -math.pi/50
 
@@ -692,7 +701,6 @@ def matrix_multiplication(a, b):
         return result_matrix
 
     else:
-        print("columns of the first matrix must be equal to the rows of the second matrix")
         return None
 
 #updates the model of the board
@@ -720,7 +728,10 @@ def updateBoard(app, event):
                 y1 = (col + 1)
                 x, y = getIsoCoordinates(app, (x0+x1)/2, (y0+y1)/2)
                 app.caspaseShoot.append((x, y)) 
-                app.board[row][col] = app.enzyme     
+                app.caspaseShootRowCol = (x0+x1)/2, (y0+y1)/2
+                app.board[row][col] = app.enzyme
+                app.enzyme.times.append(0)
+                app.enzyme.locations.append(((x0+x1)/2, (y0+y1)/2))     
         
             elif isinstance(app.enzyme, Enzyme) and app.enzyme.name == "Star Shooter":
                 x0 = row
@@ -834,34 +845,40 @@ def dnaPolyFunction(app, enzyme):
         elif enzyme[0].left[i] <= 20:
             enzyme[0].setImage(app, i, 'images/dna polymerase broken.png')
 
-def caspaseFunction(app, enzyme):    
+def caspaseFunction(app, enzyme):  
     for i in range(len(enzyme[0].times)):
-        x, y = enzyme[0].locations[i][0], enzyme[0].locations[i][1]
+        x, y = getIsoCoordinates(app, enzyme[0].locations[i][0], enzyme[0].locations[i][1])
         time = enzyme[0].times[i]
-        if app.currentTime % 3000 == 0:
+        if time % 1000 == 0:
             app.caspaseShoot.append((x, y))
 
 def getSlope(app, row, col):
-    x0, y0 = 7.5, col + 0.5
-    x1, y1 = row - 0.5, col + 0.5
+    x0, y0 = getIsoCoordinates(app, 7.5, col + 0.5)
+    x1, y1 = getIsoCoordinates(app, row - 0.5, col + 0.5)
+    dx, dy = (x0 - x1), (y0 - y1)
     
-    dx, dy = (y1 - y0), (x1 - x0)
-    return dx, dy
+    dist = distance(x0, y0, x1, y1)
+    
+    return dx, dy, dist
+
+def distance(x0, y0, x1, y1):
+    return math.sqrt((x1 - x0)**2 + (y1 - y0)**2)
 
 def starShooterFunction(app):
-
+    dx, dy, dist = getSlope(app, app.starShootRowCol[0], app.starShootRowCol[1])
+    
     directions = [(0, -1), (0, +1), (-1, 0), (+1, 0), (+1, -1), (+1, +1), (-1, -1), (-1, +1)]
     if len(app.starShoot) > 0:
         for i in range(len(app.starShoot)):
-            dx, dy = getSlope(app, app.starShootRowCol[0], app.starShootRowCol[1])
-            app.starShoot[i] = (app.starShoot[i][0] + dx*10*directions[i][0], app.starShoot[i][1] - dy*10*directions[i][1])
+            app.starShoot[i] = (app.starShoot[i][0] + dx*directions[i][0], app.starShoot[i][1] - dy*directions[i][1])
             # just know that this way, if one collides, then the other ones will switch direction...
                 
 def shootAtMutation(app):
+    dx, dy, dist = getSlope(app, app.caspaseShootRowCol[0], app.caspaseShootRowCol[1])
     i = 0
     while i < (len(app.caspaseShoot)):
         if app.caspaseShoot[i][0] <= app.width and app.caspaseShoot[i][1] >= 0:
-            app.caspaseShoot[i] = (app.caspaseShoot[i][0], app.caspaseShoot[i][1] - 20)
+            app.caspaseShoot[i] = (app.caspaseShoot[i][0] + dx//10, app.caspaseShoot[i][1] + dy//10)
             i += 1
         else:
             app.caspaseShoot.pop(i)
@@ -877,10 +894,10 @@ def shootAtMutation(app):
     for mutation in app.mutations:
         i = 0
         while i < (len(app.caspaseShoot)):
-            if len(app.caspaseShoot) > 0 and checkCaspaseCollision(app, app.caspaseShoot[i][0], app.caspaseShoot[i][1], 
-                                    mutation):
+            if checkCaspaseCollision(app, app.caspaseShoot[i][0],
+                                     app.caspaseShoot[i][1], mutation):
+                print("mutation was hit!!")
                 app.caspaseShoot.pop(i)
-                #print("mutation was hit!!")
                 mutation.getHit()
                 app.hits += 1 
                 app.progress = int(100*app.hits/app.totalHits)
@@ -950,11 +967,22 @@ def checkLose(app):
             app.mode = 'loseMode'
 
 def checkCaspaseCollision(app, caspaseX, caspaseY, mutation):
-    (width, height) = mutation.image.size
+    print("checking collision")
+    (height, width) = mutation.image.size
+    print(f'width, height = {width, height}')
     x, y = caspaseX, caspaseY
-    mx, my = getIsoCoordinates(app, mutation.row, mutation.col)
-    return ((mx - width//4 <= x <= mx + width//4) and 
-        (my + height//4 >= y >= my - height//4))
+    
+    x0 = mutation.row + 1
+    y0 = mutation.col + 1
+    x1 = (mutation.row + 1 + 1)
+    y1 = (mutation.col + 1 + 1)
+    mx, my = getIsoCoordinates(app, (x0+x1)/2, (y0+y1)/2)
+    
+    print(f'x: {x}, y: {y}, mx: {mx}, my: {my}')
+    print(f'mutation row: {mutation.row}, mutation col: {mutation.col}')
+    
+    return ((mx - width//2 <= x <= mx + width//2) and 
+        (my + height//2 >= y >= my - height//2))
 
 
 #big function for drawing the main board
@@ -1019,7 +1047,6 @@ def drawCollectedATP(app, canvas):
 
 #draws the ball for caspase's shots
 def drawShots(app, canvas):
-    print(app.caspaseShoot)
     for ball in app.caspaseShoot:
         x, y = ball[0], ball[1]
         canvas.create_image(x, y, image=ImageTk.PhotoImage(app.ballImage))
