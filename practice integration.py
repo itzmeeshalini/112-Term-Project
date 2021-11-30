@@ -175,8 +175,8 @@ def playerMode_redrawAll(app, canvas):
     font = 'Sans 26'
     canvas.create_text(app.width/2, 120, text=f'Hello {app.user}!', font=font)
     canvas.create_text(app.width/2, 160, text=f'You are on level {app.level}!', font=font)
-    canvas.create_text(app.width/2, 200, text='Press a key to play!', font=font)
     drawPlayNowButton(app, canvas)
+
 
 def drawPlayNowButton(app, canvas):
     cx, cy = app.width//2, app.height//2
@@ -189,10 +189,6 @@ def playerMode_mousePressed(app, event):
     if ((cx - app.buttonWidth//2 <= event.x <= cx + app.buttonWidth//2) and 
         (cy + 20 <= event.y <= cy + 20 + app.buttonHeight//2)):
         app.mode = 'gameMode'
-
-# def playerMode_keyPressed(app, event):
-#     app.mode = 'gameMode'
-
 
 ##########################################
 # Win Screen
@@ -254,11 +250,15 @@ def gameMode_timerFired(app):
     shootAtMutation(app)
 
     
-    for mutation in app.mutations:
+    i = 0
+    while(i < len(app.mutations)):
+        mutation = app.mutations[i]
         if mutation.hits <= 0:
             app.board[mutation.row][mutation.col] = 0
-            app.mutations.remove(mutation)
+            app.mutations.pop(i)
             app.mutationsKilled += 1
+        else:
+            i += 1
         if app.currentTime % 2000 == 100:
             updateMutationLocation(app, mutation, mutation.row - 1, mutation.col)
         
@@ -991,10 +991,14 @@ def updateMutationLocation(app, mutation, currentX, currentY):
                     app.caspaseShoot == []
                 app.board[currentX + 1][currentY] = 0
                 app.board[currentX][currentY] = mutation
-                row, col = currentX, currentY
+                row, col = currentX, currentY + 1
                 mutation.row -= 1
                 x, y = getIsoCoordinates(app, row, col)
                 app.mutations.append(Mutation(app, "Normal Mutation", app.url, app.hitsPerMutation, x, y, row, col))
+                
+                app.setNumberMutations += 1
+                app.totalHits = app.setNumberMutations*app.hitsPerMutation
+
         else:
             app.board[currentX][currentY] = mutation
             if currentX < 8:
@@ -1118,6 +1122,18 @@ def drawMessageBox(app, canvas):
     y1 = 5 + app.messageBoxHeight
     round_rectangle(canvas, x0, y0, x1, y1, fill = '#BB8D6F')
     canvas.create_rectangle(x0 + 10, y0 + 10, x1 - 10, y1 - 30, fill = '#f7f3f1')
+    
+    if app.level == 1:
+        font = 'Sans 10'
+        canvas.create_text(x0 + 15, y0 + 30, text = "Drag the enzymes in the top bar", anchor = 'w', fill = 'black', font = font)
+        canvas.create_text(x0 + 15, y0 + 30 + 20*1, text = "to the board. Use the ATP Synthase", anchor = 'w', fill = 'black', font = font)
+        canvas.create_text(x0 + 15, y0 + 30 + 20*2, text = "buy enzymes. DNA polymerase can ", anchor = 'w', fill = 'black', font = font)
+        canvas.create_text(x0 + 15, y0 + 30 + 20*3, text = "stop the mutation for a while, and", anchor = 'w', fill = 'black', font = font)
+        canvas.create_text(x0 + 15, y0 + 30 + 20*4, text = "caspase can shoot at the Mutation. ", anchor = 'w', fill = 'black', font = font)
+        canvas.create_text(x0 + 15, y0 + 30 + 20*5, text = "If the mutation gets to the other", anchor = 'w', fill = 'black', font = font)
+        canvas.create_text(x0 + 15, y0 + 30 + 20*6, text = "side, you lose :(. But if you kill", anchor = 'w', fill = 'black', font = font)
+        canvas.create_text(x0 + 15, y0 + 30 + 20*7, text = "all the mutations, you win!", anchor = 'w', fill = 'black', font = font)
+
     canvas.create_text(x0 + 10, y1 - 15, text = "MESSAGE BOX", anchor = 'w')
 
 #creates a rectangle with rounded corners
