@@ -39,6 +39,7 @@ def homeScreenMode_keyPressed(app, event):
     app.mode = 'gameMode'
 
 def homeScreenMode_mousePressed(app, event):
+    app.enzymes = []
     cx, cy = app.width//2, app.height//2
     if ((cx - app.margin - app.buttonWidth <= event.x <= cx - app.margin) and 
         (cy + 20 <= event.y <= cy + 20 + app.buttonHeight//2)):
@@ -49,13 +50,22 @@ def homeScreenMode_mousePressed(app, event):
         
 def drawButtons(app, canvas):
     cx, cy = app.width//2, app.height//2
-    canvas.create_rectangle(cx - app.margin - app.buttonWidth, cy + 20, cx - app.margin, cy + 20 + app.buttonHeight)
+    
+    
+    # canvas.create_rectangle(cx - app.margin - app.buttonWidth, cy + 20, cx - app.margin, cy + 20 + app.buttonHeight)
+    # canvas.create_text(cx - app.margin - app.buttonWidth//2, cy + 20 + app.buttonHeight//2, 
+    #                    text = "Returning Player", font = 'Sans 14', anchor = 'center')
+    # canvas.create_rectangle(cx + app.margin, cy + 20, cx + app.margin + app.buttonWidth, cy + 20 + app.buttonHeight)
+    # canvas.create_text(cx + app.margin + app.buttonWidth//2, cy + 20 + app.buttonHeight//2, 
+    #                    text = "New Player", font = 'Sans 14', anchor = 'center')
+    
+    round_rectangle(canvas, cx - app.margin - app.buttonWidth, cy + 20, cx - app.margin, cy + 20 + app.buttonHeight, fill = '#a9edff')
     canvas.create_text(cx - app.margin - app.buttonWidth//2, cy + 20 + app.buttonHeight//2, 
                        text = "Returning Player", font = 'Sans 14', anchor = 'center')
-    canvas.create_rectangle(cx + app.margin, cy + 20, cx + app.margin + app.buttonWidth, cy + 20 + app.buttonHeight)
+    round_rectangle(canvas, cx + app.margin, cy + 20, cx + app.margin + app.buttonWidth, cy + 20 + app.buttonHeight, fill = '#a9edff')
     canvas.create_text(cx + app.margin + app.buttonWidth//2, cy + 20 + app.buttonHeight//2, 
                        text = "New Player", font = 'Sans 14', anchor = 'center')
-        
+
 ##########################################
 # Login Screen
 ##########################################
@@ -73,23 +83,34 @@ def loginMode_mousePressed(app, event):
         username = app.getUserInput('Username')
         if (username == None):
             app.mode = 'homeScreenMode'
-            break
-    else:
+        
+    if (username != None):
         password = app.getUserInput('Password')
         if (password == None):
             app.mode = 'homeScreenMode'
-        while(password != app.loginsDict[username][0]):
-            app.showMessage("You entered the wrong password")
-            password = app.getUserInput('Incorrect password. Enter it again.')
-            if (password == None):
-                app.mode = 'homeScreenMode'
-                break
-        app.mode = 'playerMode'
-        app.user = username
-        app.level = app.loginsDict[app.user][1]
+        else:
+            while(password != app.loginsDict[username][0]):
+                app.showMessage("You entered the wrong password")
+                password = app.getUserInput('Incorrect password. Enter it again.')
+                if (password == None):
+                    app.mode = 'homeScreenMode'
+            if password == app.loginsDict[username][0]:
+                app.mode = 'playerMode'
+                app.user = username
+                app.level = app.loginsDict[app.user][1]
+                generateConfigs(app)
+                app.totalHits = app.setNumberMutations*app.hitsPerMutation
+                app.mutationTime = 2000
+
+                
+                for i in range(len(app.enzymes)):
+                    enzyme = app.enzymes[i]
+                    if isinstance(enzyme, Enzyme):
+                        enzyme.setPosition(80 + i*app.cardWidth, 5 + 5)
+                    else:
+                        enzyme[1], enzyme[2] = 80 + i*app.cardWidth, 5 + 5
 
 
-    
 ##########################################
 # Sign Up Screen
 ##########################################
@@ -122,17 +143,29 @@ def signupMode_mousePressed(app, event):
                     if (password2 == None):
                         app.mode = 'homeScreenMode'
                         break
-                    else:
-                        level = 1
-                        app.loginsDict[username] = [password2, level]
+            if (password1 == password2):
+                level = 1
+                app.loginsDict[username] = [password2, level]
 
-                        f = open("logins.txt","w")
-                        f.write( str(app.loginsDict) )
-                        f.close()
-                        
-                        app.user = username
-                        app.mode = 'playerMode'
-                        app.level = app.loginsDict[app.user][1]
+                f = open("logins.txt","w")
+                f.write( str(app.loginsDict) )
+                f.close()
+                
+                app.user = username
+                app.mode = 'playerMode'
+                app.level = app.loginsDict[app.user][1]
+                generateConfigs(app)
+                app.totalHits = app.setNumberMutations*app.hitsPerMutation
+                app.mutationTime = 2000
+
+                
+                for i in range(len(app.enzymes)):
+                    enzyme = app.enzymes[i]
+                    if isinstance(enzyme, Enzyme):
+                        enzyme.setPosition(80 + i*app.cardWidth, 5 + 5)
+                    else:
+                        enzyme[1], enzyme[2] = 80 + i*app.cardWidth, 5 + 5
+
     
 ##########################################
 # Player Screen
@@ -140,12 +173,25 @@ def signupMode_mousePressed(app, event):
 
 def playerMode_redrawAll(app, canvas):
     font = 'Sans 26'
-    canvas.create_text(app.width/2, 150, text=f'Hello {app.user}!', font=font)
-    canvas.create_text(app.width/2, 175, text=f'You are on level {app.level}!', font=font)
+    canvas.create_text(app.width/2, 120, text=f'Hello {app.user}!', font=font)
+    canvas.create_text(app.width/2, 160, text=f'You are on level {app.level}!', font=font)
     canvas.create_text(app.width/2, 200, text='Press a key to play!', font=font)
+    drawPlayNowButton(app, canvas)
 
-def playerMode_keyPressed(app, event):
-    app.mode = 'gameMode'
+def drawPlayNowButton(app, canvas):
+    cx, cy = app.width//2, app.height//2
+    round_rectangle(canvas, cx - app.buttonWidth//2, cy + 20, cx + app.buttonWidth//2, cy + 20 + app.buttonHeight, fill = '#a9edff')
+    canvas.create_text(cx, cy + 20 + app.buttonHeight//2, 
+                       text = "Play Now!", font = 'Sans 14', anchor = 'center')
+    
+def playerMode_mousePressed(app, event):
+    cx, cy = app.width//2, app.height//2
+    if ((cx - app.buttonWidth//2 <= event.x <= cx + app.buttonWidth//2) and 
+        (cy + 20 <= event.y <= cy + 20 + app.buttonHeight//2)):
+        app.mode = 'gameMode'
+
+# def playerMode_keyPressed(app, event):
+#     app.mode = 'gameMode'
 
 
 ##########################################
@@ -213,8 +259,8 @@ def gameMode_timerFired(app):
             app.board[mutation.row][mutation.col] = 0
             app.mutations.remove(mutation)
             app.mutationsKilled += 1
-        if app.currentTime % app.mutationTime == 100:
-            updateMutationLocation(app, mutation, mutation.row, mutation.col + 1)
+        if app.currentTime % 2000 == 100:
+            updateMutationLocation(app, mutation, mutation.row - 1, mutation.col)
         
     addNewMutation(app)
     #add an atp after a certain interval
@@ -436,6 +482,8 @@ def appStarted(app):
     app.user = ""
     app.level = 1
     
+    app.addMutationTime = 0
+    
     app.buttonWidth = app.width//6
     app.buttonHeight = app.height//20
     app.margin = 20
@@ -526,10 +574,7 @@ def appStarted(app):
     
     #setting up model configurations for the board 
     app.board = [([0] * app.cols) for row in range(app.rows)]
-    row = 8
-    col = random.randint(0, app.cols - 1)
-    x, y = getCoordinates(app, row, col)
-    app.mutations.append(Mutation(app, "Normal Mutation", app.url, 5, x, y, row, col))
+    
     app.setNumberMutations = 0
     app.mutationsPassed = 1
     app.mutationsKilled = 0
@@ -537,7 +582,8 @@ def appStarted(app):
     app.hits = 0
     app.hitsPerMutation = 0
     app.winTime = None
-
+    
+    
     
     #helper variables for dragging
     app.dragCard = False
@@ -551,16 +597,7 @@ def appStarted(app):
     
     generateConfigs(app)
     
-    app.totalHits = app.setNumberMutations*app.hitsPerMutation
-    app.mutationTime = 2000
-
-    
-    for i in range(len(app.enzymes)):
-        enzyme = app.enzymes[i]
-        if isinstance(enzyme, Enzyme):
-            enzyme.setPosition(80 + i*app.cardWidth, 5 + 5)
-        else:
-            enzyme[1], enzyme[2] = 80 + i*app.cardWidth, 5 + 5
+    app.totalHits = 0
     
 def getLogins(app):
     file = open("logins.txt", "r")
@@ -573,60 +610,55 @@ def getLogins(app):
 def generateConfigs(app):
     randomSeed = random.seed(app.level)
     app.setNumberMutations = app.level
+    app.addMutationTime = 100//app.level*90
+    app.addMutationTime = app.addMutationTime//100*100
     if app.level < 10:
-        app.hitsPerMutation = 5
+        app.hitsPerMutation = 10
     else:
-        app.hitsPerMutation = random.randint(app.level//4, app.level//2, randomSeed)
+        app.hitsPerMutation = random.randint(2*app.level//3, 2*app.level, randomSeed)
     app.mutationTime = mutationTimeFunction(app.level)
-    #if app.level <= 1:
-        #app.availableEnzymeCount = 4
-    #elif app.level <= 2:
-        #app.availableEnzymeCount = 4
-    app.availableEnzymeCount = 4
+    
+    if app.level > 5:
+        app.availableEnzymeCount = 4
+    elif app.level <= 5:
+        app.availableEnzymeCount = 3
     
     for i in range(app.availableEnzymeCount):
         app.enzymes.append(Enzyme(app, app.gameEnzymes[i][0], app.gameEnzymes[i][1], app.gameEnzymes[i][2], len(app.enzymes), 3, app.gameEnzymes[i][3]))
     app.enzymes.append(["Shovel", 0, 0])
+    
+    row = 8
+    col = random.randint(0, app.cols - 1)
+    x, y = getCoordinates(app, row, col)
+    app.mutations.append(Mutation(app, "Normal Mutation", app.url, app.hitsPerMutation, x, y, row, col))
 
+    
+    print(f'mutation time: {app.addMutationTime}')
+    print(f'hits: {app.hitsPerMutation}')
+    print(f'Mutation Number: {app.setNumberMutations}')
+    print(f'level = {app.level}')
 
 def mutationTimeFunction(x):
     return (0.5)**(x - 10) * 800
 
 def resetConfigs(app):
+    app.angle = -1.5
     app.currentTime = 0
     app.atp = []
     app.collectedATP = 50
     app.rotationMatrix = [[math.cos(0), - math.sin(0)],
                         [math.sin(0),   math.cos(0)]]
-    app.progress = 0
     app.enzymes = []
-
-    for i in range(len(app.enzymes)):
-        enzyme = app.enzymes[i]
-        if isinstance(enzyme, Enzyme):
-            enzyme.setPosition(80 + i*app.cardWidth, 5 + 5)
-        else:
-            enzyme[1], enzyme[2] = 80 + i*app.cardWidth, 5 + 5
-
-    app.boardEnzymes = []
-    app.mutations = []
-    app.caspaseShoot = []
+    app.boardEnzymes, app.mutations, app.caspaseShoot = [], [], []
 
     #setting up model configurations for the board 
-    app.board = [([0] * app.cols) for row in range(app.rows)]
-    row = 8
-    col = random.randint(0, app.cols - 1)
-    x, y = getCoordinates(app, row, col)
-    app.mutations.append(Mutation(app, "Normal Mutation", app.url, app.hitsPerMutation, x, y, row, col))
+    
     app.setNumberMutations = app.level
     app.mutationsPassed = 1
     app.mutationsKilled = 0
     app.progress = 0
     app.hits = 0
-    app.hitsPerMutation = 5
-    app.totalHits = app.setNumberMutations*app.hitsPerMutation
     app.winTime = None
-
 
     #helper variables for dragging
     app.dragCard = False
@@ -637,7 +669,7 @@ def resetConfigs(app):
     generateConfigs(app)
     
     app.totalHits = app.setNumberMutations*app.hitsPerMutation
-
+    app.board = [([0] * app.cols) for row in range(app.rows)]
     
     for i in range(len(app.enzymes)):
         enzyme = app.enzymes[i]
@@ -645,7 +677,6 @@ def resetConfigs(app):
             enzyme.setPosition(80 + i*app.cardWidth, 5 + 5)
         else:
             enzyme[1], enzyme[2] = 80 + i*app.cardWidth, 5 + 5
-    
 
 #crops the sprite sheet
 def getSprites(app, strip):
@@ -711,6 +742,8 @@ def updateBoard(app, event):
     
     if not isinstance(app.enzyme, Enzyme):
             print("need to remove enzyme")
+            if app.board[row][col].name == "Caspase":
+                app.caspaseShoot = []
             removeEnzymeFromBoard(app, app.board[row][col], 0)
             app.board[row][col] = 0
 
@@ -751,7 +784,7 @@ def updateBoard(app, event):
                 
                 #if the enzyme is dna polymerase, then start its "time left on the board"
                 if isinstance(app.enzyme, Enzyme) and app.enzyme.name == "DNA Polymerase":
-                    app.enzyme.left.append(40)
+                    app.enzyme.left.append(80)
     #app.dragCard = False
 
 #returns back the index of the card that was clicked in the top bar 
@@ -811,18 +844,23 @@ def matrixMultiply(m1,m2):
             newMatrix[i][j] = dotProduct
     return newMatrix
 
-#changes the location of the mutation object by 
-#changing previous location to 0 and next location to 1
-#doesn't move if dna polymerase is there
+
 def addNewMutation(app):
+    print(f'time: {app.currentTime}')
     if app.mutationsPassed < app.setNumberMutations:
-        randomTime = random.randrange(0, 1000, 100)
-        if app.currentTime % 1000 == randomTime:
-            row = random.randint(0, app.cols - 1)
-            col = 8
+        print(f'passed mutations is less than mutation number')
+        if app.currentTime % app.addMutationTime == 0:
+            row = 8
+            col = random.randint(0, app.cols - 1)
+            while (app.board[row][col] != 0):
+                row = 8
+                col = random.randint(0, app.cols - 1)
             x, y = getIsoCoordinates(app, row, col)
             app.mutations.append(Mutation(app, "Normal Mutation", app.url, app.hitsPerMutation, x, y, row, col))
             app.mutationsPassed += 1
+        else:            
+            print(f'currentTime is not working')
+
 
 def atpSynthaseFunction(app, enzyme):
     #print("i'm here!'")
@@ -835,7 +873,7 @@ def dnaPolyFunction(app, enzyme):
         x, y = enzyme[0].locations[i][0], enzyme[0].locations[i][1]
         row, col = find_row_col(app, x, y)
         #print(row, col)
-        if app.board[row][col - 1] == 1:
+        if isinstance(app.board[row + 1][col], Mutation):
             enzyme[0].left[i] -= 1
         #print(enzyme[0].left)
         if enzyme[0].left[i] <= 0:
@@ -867,10 +905,12 @@ def distance(x0, y0, x1, y1):
 def starShooterFunction(app):
     dx, dy, dist = getSlope(app, app.starShootRowCol[0], app.starShootRowCol[1])
     
-    directions = [(0, -1), (0, +1), (-1, 0), (+1, 0), (+1, -1), (+1, +1), (-1, -1), (-1, +1)]
+    directions = [(+dy//20, +dx), (+dy//20, -dx), (-dy//20, +dx), (-dy//20, -dx), 
+                  (+dx, +dy//20), (+dx, -dy//20), (-dx, +dy//20), (-dx, -dy//20)]
+    
     if len(app.starShoot) > 0:
         for i in range(len(app.starShoot)):
-            app.starShoot[i] = (app.starShoot[i][0] + dx*directions[i][0], app.starShoot[i][1] - dy*directions[i][1])
+            app.starShoot[i] = (app.starShoot[i][0] + directions[i][0], app.starShoot[i][1] + directions[i][1])
             # just know that this way, if one collides, then the other ones will switch direction...
                 
 def shootAtMutation(app):
@@ -896,7 +936,6 @@ def shootAtMutation(app):
         while i < (len(app.caspaseShoot)):
             if checkCaspaseCollision(app, app.caspaseShoot[i][0],
                                      app.caspaseShoot[i][1], mutation):
-                print("mutation was hit!!")
                 app.caspaseShoot.pop(i)
                 mutation.getHit()
                 app.hits += 1 
@@ -933,9 +972,9 @@ def checkEnoughATP(app, enzyme):
 
 #add an atp after a certain interval
 def addNewATP(app):
-    if app.currentTime % 8000 == 200:
+    if app.currentTime % 15000 == 200:
         randomx = random.randint(0, app.width)
-        randomy = 400
+        randomy = 200
         placeATP(app, randomx, randomy)
 
 def updateMutationLocation(app, mutation, currentX, currentY):
@@ -947,6 +986,15 @@ def updateMutationLocation(app, mutation, currentX, currentY):
         elif (isinstance(app.board[currentX][currentY], Enzyme)):
             if app.board[currentX][currentY].name == "DNA Polymerase":
                 app.board[currentX + 1][currentY] = mutation
+            else:
+                if app.board[currentX][currentY].name == "Caspase":
+                    app.caspaseShoot == []
+                app.board[currentX + 1][currentY] = 0
+                app.board[currentX][currentY] = mutation
+                row, col = currentX, currentY
+                mutation.row -= 1
+                x, y = getIsoCoordinates(app, row, col)
+                app.mutations.append(Mutation(app, "Normal Mutation", app.url, app.hitsPerMutation, x, y, row, col))
         else:
             app.board[currentX][currentY] = mutation
             if currentX < 8:
@@ -956,6 +1004,15 @@ def updateMutationLocation(app, mutation, currentX, currentY):
             mutation.x = position[0]
             mutation.y = position[1]
           
+def findIndex(app, enzyme, row, col):
+    for i in range(len(enzyme.locations)):
+        x0 = row
+        y0 = col
+        x1 = (row + 1)
+        y1 = (col + 1)
+        if enzyme.locations[i] == ((x0+x1)/2, (y0+y1)/2):
+            return i         
+
 def checkWin(app, currentTime):
     if app.winTime == None:
         if app.setNumberMutations == app.mutationsKilled:
@@ -967,20 +1024,19 @@ def checkLose(app):
             app.mode = 'loseMode'
 
 def checkCaspaseCollision(app, caspaseX, caspaseY, mutation):
-    print("checking collision")
     (height, width) = mutation.image.size
-    print(f'width, height = {width, height}')
     x, y = caspaseX, caspaseY
     
-    x0 = mutation.row + 1
-    y0 = mutation.col + 1
-    x1 = (mutation.row + 1 + 1)
-    y1 = (mutation.col + 1 + 1)
+    x0 = mutation.row
+    y0 = mutation.col
+    x1 = (mutation.row + 1)
+    y1 = (mutation.col + 1)
     mx, my = getIsoCoordinates(app, (x0+x1)/2, (y0+y1)/2)
     
-    print(f'x: {x}, y: {y}, mx: {mx}, my: {my}')
-    print(f'mutation row: {mutation.row}, mutation col: {mutation.col}')
-    
+    # print(f'x: {x}, y: {y}, mx: {mx}, my: {my}')
+    # print(f'row: {(x0+x1)/2}, col: {(y0+y1)/2}')
+    # print(f'height: {height}, width: {width}')
+        
     return ((mx - width//2 <= x <= mx + width//2) and 
         (my + height//2 >= y >= my - height//2))
 
