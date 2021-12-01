@@ -229,7 +229,7 @@ def loseMode_keyPressed(app, event):
 
 #GIANT timer fired program...may need to break it up into smaller functions
 def gameMode_timerFired(app):
-    app.progress = int(100*app.hits/app.totalHits)
+    app.progress = int(100*app.mutationsKilled/app.setNumberMutations)
     app.rotation_z = [[math.cos(app.angle), -math.sin(app.angle), 0],
                   [math.sin(app.angle), math.cos(app.angle), 0],
                   [0, 0 ,1]]
@@ -412,7 +412,7 @@ def gameMode_redrawAll(app, canvas):
         drawenzymeCard(app.enzyme, app, canvas, app.enzymeX, app.enzymeY)
     canvas.create_text(20, app.height - 20, text = f'Level {app.level}', anchor = 'w')
     canvas.create_text(20, app.height - 40, text = f'Progress {app.progress}%', anchor = 'w')
-    canvas.create_text(20, app.height - 60, text = f'Mutations Left {app.setNumberMutations - app.mutationsPassed}', anchor = 'w')
+    canvas.create_text(20, app.height - 60, text = f'Mutations Left {app.setNumberMutations - app.mutationsKilled}', anchor = 'w')
 
 ##########################################
 # Main App
@@ -742,12 +742,12 @@ def updateBoard(app, event):
     row, col = find_row_col(app, event.x, event.y)
     
     if not isinstance(app.enzyme, Enzyme):
-            print("need to remove enzyme")
-            if app.board[row][col].name == "Caspase":
-                app.caspaseShoot = []
-            removeEnzymeFromBoard(app, app.board[row][col], 0)
-            app.board[row][col] = 0
-            print(f'row: {row}, col: {col}')
+        print("need to remove enzyme")
+        if isinstance(app.board[row][col], Enzyme) and app.board[row][col].name == "Caspase":
+            app.caspaseShoot = []
+        removeEnzymeFromBoard(app, app.board[row][col], 0)
+        app.board[row][col] = 0
+        print(f'row: {row}, col: {col}')
 
     elif app.board[row][col] == 0:
     #adds a new enzyme to the board since mouse was released
@@ -810,14 +810,15 @@ def placeATP(app, x, y):
 #takes out the enzyme from the board list by checking which location needs to be removed
 def removeEnzymeFromBoard(app, enzyme, index):
     i = 0
-    if not isinstance(enzyme, int):
+    if isinstance(enzyme, Enzyme):
         while i < len(app.boardEnzymes):
             boardEnzyme = app.boardEnzymes[i]
             #print((boardEnzyme[1], boardEnzyme[2]), enzyme.locations[index])
             if ((boardEnzyme[1] == enzyme.locations[index][0]) and 
                 (boardEnzyme[2] == enzyme.locations[index][1])):
                 app.boardEnzymes.pop(i)
-                app.board[enzyme.locations[index][0] - 0.5][enzyme.locations[index][1] - 0.5] = 0
+                print(f'row, col = {enzyme.locations[index][0], enzyme.locations[index][1]}')
+                app.board[enzyme.locations[index][0] - 0.5][int(enzyme.locations[index][1] - 0.5)] = 0
             else:
                 i += 1
 
@@ -874,7 +875,8 @@ def atpSynthaseFunction(app, enzyme):
 
 def dnaPolyFunction(app, enzyme):
     for i in range(len(enzyme[0].left)):
-        row, col = enzyme[0].locations[i][0], enzyme[0].locations[i][1]
+        x, y = enzyme[0].locations[i][0], enzyme[0].locations[i][1]
+        row, col = find_row_col(app, x, y)
         #print(row, col)
         if isinstance(app.board[row + 1][col], Mutation):
             enzyme[0].left[i] -= 1
@@ -953,11 +955,12 @@ def shootAtMutation(app):
         print(app.mutations)
         print(index)
         app.mutations.pop(index)
+        app.mutationsKilled += 1
         
     i = 0
     while i < (len(app.caspaseShoot)):
         print(app.caspaseShoot)
-        dx, dy, dist = getSlope(app, app.caspaseShoot[i][2] + 0.5, app.caspaseShoot[i][3] + 0.5)
+        dx, dy, dist = getSlope(app, app.caspaseShoot[i][2] + 0.5, app.caspaseShoot[i][3] - 0.5)
         if app.caspaseShoot[i][0] <= app.width and app.caspaseShoot[i][1] >= 0:
             app.caspaseShoot[i] = (app.caspaseShoot[i][0] + dx//10, app.caspaseShoot[i][1] + dy//10, app.caspaseShoot[i][2], app.caspaseShoot[i][3])
             i += 1
@@ -990,20 +993,19 @@ def updateMutationLocation(app, i, mutation, currentX, currentY):
             app.board[mutation.row][mutation.col] = 0
             app.mutations.pop(i)
         elif (isinstance(app.board[currentX][currentY], Enzyme)):
-            pass
-        elif (isinstance(app.board[currentX][currentY], Enzyme)):
             if app.board[currentX][currentY].name == "DNA Polymerase":
                 app.board[currentX + 1][currentY] = mutation
             else:
                 if app.board[currentX][currentY].name == "Caspase":
                     app.caspaseShoot == []
-                app.board[currentX + 1][currentY] = 0
                 app.board[currentX][currentY] = mutation
-                row, col = currentX, currentY + 1
-                mutation.row -= 1
-                x, y = getIsoCoordinates(app, row, col)
-                app.mutations.append(Mutation(app, "Normal Mutation", app.url, app.hitsPerMutation, x, y, row, col))
                 
+                row, col = currentX + 1, currentY
+                x, y = getIsoCoordinates(app, row, col)
+                newMutation = Mutation(app, "Normal Mutation", app.url, app.hitsPerMutation, x, y, row, col)
+                app.mutations.append(newMutation)
+                app.board[row][col] = newMutation
+
                 app.setNumberMutations += 1
                 app.mutationsPassed += 1
                 app.totalHits = app.setNumberMutations*app.hitsPerMutation
@@ -1092,7 +1094,9 @@ def drawBoard(app, canvas):
                 if app.board[row][col].hits > 0:
                     placeTile(app, x0, y0, x1, y1, canvas, '#9CD3DB')
                     sprite = app.sprites[app.spriteCounter]
-                    canvas.create_image(x, y, image=ImageTk.PhotoImage(sprite))                
+                    canvas.create_image(x, y, image=ImageTk.PhotoImage(sprite))
+                    size = 18//app.hitsPerMutation*app.board[row][col].hits
+                    round_rectangle(canvas, x - 15, y - 35, x - 10 + size, y - 30, r = 5, fill = 'red', outline = 'black')                
                 else:
                     placeTile(app, x0, y0, x1, y1, canvas, '#9CD3DB')
             #if the value on the board here is 0, then place the empty tile there
