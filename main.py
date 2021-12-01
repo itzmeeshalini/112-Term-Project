@@ -31,8 +31,9 @@ import ast
 ##########################################
 
 def homeScreenMode_redrawAll(app, canvas):
-    font = 'Sans 26'
-    canvas.create_text(app.width/2, 150, text='Play Enzymes vs. Mutations!', font=font)
+    canvas.create_image(app.width//2, app.height//2, image=ImageTk.PhotoImage(app.background))
+    font = 'Sans 32'
+    canvas.create_text(app.width/2, 250, text='Play Enzymes vs. Mutations!', font=font, fill = 'white', anchor = 'center')
     drawButtons(app, canvas)
 
 def homeScreenMode_keyPressed(app, event):
@@ -71,8 +72,10 @@ def drawButtons(app, canvas):
 ##########################################
 
 def loginMode_redrawAll(app, canvas):
+    canvas.create_image(app.width//2, app.height//2, image=ImageTk.PhotoImage(app.background))
     font = 'Sans 26'
-    canvas.create_text(app.width/2, 150, text='Login Mode!', font=font)
+    canvas.create_text(app.width/2, 250, text='Login Mode!', font=font, anchor = 'center', fill = 'white')
+    canvas.create_text(app.width/2, 300, text='Press your mouse to login!', font=font, anchor = 'center', fill = 'white')
 
 def loginMode_mousePressed(app, event):
     username = app.getUserInput('Username')
@@ -116,8 +119,11 @@ def loginMode_mousePressed(app, event):
 ##########################################
 
 def signupMode_redrawAll(app, canvas):
+    canvas.create_image(app.width//2, app.height//2, image=ImageTk.PhotoImage(app.background))
     font = 'Sans 26'
-    canvas.create_text(app.width/2, 150, text='Sign Up Mode!', font=font)
+    canvas.create_text(app.width/2, 250, text='Sign Up Mode!', font=font, fill = 'white', anchor = 'center')
+    canvas.create_text(app.width/2, 300, text='Press your mouse to login!', font=font, anchor = 'center', fill = 'white')
+
     
 def signupMode_mousePressed(app, event):
     username = app.getUserInput('Enter a username')
@@ -172,9 +178,10 @@ def signupMode_mousePressed(app, event):
 ##########################################
 
 def playerMode_redrawAll(app, canvas):
+    canvas.create_image(app.width//2, app.height//2, image=ImageTk.PhotoImage(app.background))
     font = 'Sans 26'
-    canvas.create_text(app.width/2, 120, text=f'Hello {app.user}!', font=font)
-    canvas.create_text(app.width/2, 160, text=f'You are on level {app.level}!', font=font)
+    canvas.create_text(app.width/2, 120, text=f'Hello {app.user}!', font=font, fill = 'white', anchor = 'center')
+    canvas.create_text(app.width/2, 160, text=f'You are on level {app.level}!', font=font, fill = 'white', anchor = 'center')
     drawPlayNowButton(app, canvas)
 
 
@@ -195,9 +202,10 @@ def playerMode_mousePressed(app, event):
 ##########################################
 
 def winMode_redrawAll(app, canvas):
+    canvas.create_image(app.width//2, app.height//2, image=ImageTk.PhotoImage(app.background))
     font = 'Sans 26'
-    canvas.create_text(app.width/2, 150, text='You Win!', font=font)
-    canvas.create_text(app.width/2, 200, text='Press a key for the next level!', font=font)
+    canvas.create_text(app.width/2, 150, text='You Win!', font=font, anchor = 'center', fill = 'white')
+    canvas.create_text(app.width/2, 200, text='Press a key for the next level!', font=font, anchor = 'center', fill = 'white')
 
 def winMode_keyPressed(app, event):
     app.mode = 'gameMode'
@@ -214,9 +222,10 @@ def winMode_keyPressed(app, event):
 ##########################################
 
 def loseMode_redrawAll(app, canvas):
+    canvas.create_image(app.width//2, app.height//2, image=ImageTk.PhotoImage(app.background))
     font = 'Sans 26'
-    canvas.create_text(app.width/2, 150, text='Aww man! You lose', font=font)
-    canvas.create_text(app.width/2, 200, text='Press a key to redo level!', font=font)
+    canvas.create_text(app.width/2, 150, text='Aww man! You lose', font=font, anchor = 'center', fill = 'white')
+    canvas.create_text(app.width/2, 200, text='Press a key to redo level!', font=font, fill = 'white', anchor = 'center')
 
 def loseMode_keyPressed(app, event):
     app.mode = 'gameMode'
@@ -401,6 +410,7 @@ def gameMode_keyPressed(app, event):
 
 #calls all the drawing helper functions
 def gameMode_redrawAll(app, canvas):
+    canvas.create_image(app.width//2, app.height//2, image=ImageTk.PhotoImage(app.background))
     drawBoard(app, canvas)
     drawATP(app, canvas)
     drawTopBar(app, canvas)
@@ -410,9 +420,9 @@ def gameMode_redrawAll(app, canvas):
     #only draws the card on the board if the user is dragging the card
     if app.dragCard:
         drawenzymeCard(app.enzyme, app, canvas, app.enzymeX, app.enzymeY)
-    canvas.create_text(20, app.height - 20, text = f'Level {app.level}', anchor = 'w')
-    canvas.create_text(20, app.height - 40, text = f'Progress {app.progress}%', anchor = 'w')
-    canvas.create_text(20, app.height - 60, text = f'Mutations Left {app.setNumberMutations - app.mutationsKilled}', anchor = 'w')
+    canvas.create_text(20, app.height - 20, text = f'Level {app.level}', anchor = 'w', fill = 'white')
+    canvas.create_text(20, app.height - 40, text = f'Progress {app.progress}%', anchor = 'w', fill = 'white')
+    canvas.create_text(20, app.height - 60, text = f'Mutations Left {app.setNumberMutations - app.mutationsKilled}', anchor = 'w', fill = 'white')
 
 ##########################################
 # Main App
@@ -466,7 +476,7 @@ class Mutation(object):
         self.name = name
         self.imgUrl = imgUrl
         self.image = app.loadImage(imgUrl)
-        self.image = app.scaleImage(self.image, 1/8)
+        self.image = app.scaleImage(self.image, 1/15)
         self.hits = hits
         self.x = x
         self.y = y
@@ -478,6 +488,10 @@ class Mutation(object):
 
 #sets up all the initial helper variables
 def appStarted(app):
+    
+    app.background = app.loadImage('images/cell image.jpeg')
+    app.background = app.scaleImage(app.background, 2)
+
     app.loginsDict = dict()
     getLogins(app)
     
@@ -1094,9 +1108,10 @@ def drawBoard(app, canvas):
                 if app.board[row][col].hits > 0:
                     placeTile(app, x0, y0, x1, y1, canvas, '#9CD3DB')
                     sprite = app.sprites[app.spriteCounter]
+                    sprite = app.scaleImage(sprite, 1/1.5)
                     canvas.create_image(x, y, image=ImageTk.PhotoImage(sprite))
                     size = 18//app.hitsPerMutation*app.board[row][col].hits
-                    round_rectangle(canvas, x - 15, y - 35, x - 10 + size, y - 30, r = 5, fill = 'red', outline = 'black')                
+                    round_rectangle(canvas, x - 15, y - 25, x - 10 + size, y - 20, r = 5, fill = 'red', outline = 'black')                
                 else:
                     placeTile(app, x0, y0, x1, y1, canvas, '#9CD3DB')
             #if the value on the board here is 0, then place the empty tile there
